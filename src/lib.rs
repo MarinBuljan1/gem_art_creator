@@ -16,13 +16,20 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
 
-    let a4_width_mm = 210.0;
-    let a4_height_mm = 297.0;
+    let mut a4_width_mm = 210.0;
+    let mut a4_height_mm = 297.0;
     let margin_mm = 30.0;
     let gem_size_mm = 2.7;
     let dpi = 300.0;
     let mm_per_inch = 25.4;
     let pixels_per_mm = dpi / mm_per_inch;
+
+    let (img_width, img_height) = img.dimensions();
+
+    // Adjust A4 dimensions if the image is landscape
+    if img_width > img_height {
+        std::mem::swap(&mut a4_width_mm, &mut a4_height_mm);
+    }
 
     let a4_width_px = ((a4_width_mm * pixels_per_mm) as f32).round() as u32;
     let a4_height_px = ((a4_height_mm * pixels_per_mm) as f32).round() as u32;
@@ -101,8 +108,14 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     }
 
     // Calculate top-left corner to paste the gem art
-    let paste_x = margin_px;
-    let paste_y = margin_px;
+    let available_width_px = a4_width_px - (2 * margin_px);
+    let available_height_px = a4_height_px - (2 * margin_px);
+
+    let offset_x = (available_width_px - gem_art_width_px) / 2;
+    let offset_y = (available_height_px - gem_art_height_px) / 2;
+
+    let paste_x = margin_px + offset_x;
+    let paste_y = margin_px + offset_y;
 
     // Paste the gem art onto the final image
     image::imageops::overlay(&mut final_image, &gem_art_image, paste_x as i64, paste_y as i64);
