@@ -4,7 +4,7 @@ use gloo_file::File;
 use gloo_file::callbacks::FileReader;
 use web_sys::{HtmlInputElement, HtmlCanvasElement, CanvasRenderingContext2d};
 use wasm_bindgen::JsCast;
-use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType};
+use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericImage};
 use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
@@ -20,39 +20,48 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     let a4_height_mm = 297.0;
     let margin_mm = 30.0;
     let gem_size_mm = 2.7;
+    let dpi = 300.0;
+    let mm_per_inch = 25.4;
+    let pixels_per_mm = dpi / mm_per_inch;
 
-    let target_width_mm = a4_width_mm - (2.0 * margin_mm);
-    let target_height_mm = a4_height_mm - (2.0 * margin_mm);
+    let a4_width_px = ((a4_width_mm * pixels_per_mm) as f32).round() as u32;
+    let a4_height_px = ((a4_height_mm * pixels_per_mm) as f32).round() as u32;
+    let margin_px = ((margin_mm * pixels_per_mm) as f32).round() as u32;
+
+    let printable_width_mm = a4_width_mm - (2.0 * margin_mm);
+    let printable_height_mm = a4_height_mm - (2.0 * margin_mm);
 
     let (img_width, img_height) = img.dimensions();
     let aspect_ratio = img_width as f32 / img_height as f32;
 
-    let (new_width, new_height) = if target_width_mm / aspect_ratio <= target_height_mm {
-        (target_width_mm, target_width_mm / aspect_ratio)
+    let (new_width_mm, new_height_mm) = if printable_width_mm / aspect_ratio <= printable_height_mm {
+        (printable_width_mm, printable_width_mm / aspect_ratio)
     } else {
-        (target_height_mm * aspect_ratio, target_height_mm)
+        (printable_height_mm * aspect_ratio, printable_height_mm)
     };
 
-    let gems_x = (new_width / gem_size_mm).floor() as u32;
-    let gems_y = (new_height / gem_size_mm).floor() as u32;
+    let num_gems_x = (new_width_mm / gem_size_mm).floor() as u32;
+    let num_gems_y = (new_height_mm / gem_size_mm).floor() as u32;
 
-    let resized_img = img.resize_exact(gems_x, gems_y, FilterType::Nearest);
+    let resized_img = img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
     let gem_colors: Vec<Lab> = colors
         .iter()
         .map(|c| {
-            // Convert u8-based sRGB to f32, then to linear space, then to Lab
             let srgb: Srgb<f32> = Srgb::from_str(&c.value).unwrap().into_format();
             srgb.into_linear().into_color()
         })
         .collect();
 
-    let mut new_image = DynamicImage::new_rgba8(gems_x, gems_y);
-    let mut new_image_buffer = new_image.as_mut_rgba8().unwrap();
+    let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
+    let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
+    let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
 
-    for x in 0..gems_x {
-        for y in 0..gems_y {
-            let pixel = resized_img.get_pixel(x, y);
+    let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
+
+    for gx in 0..num_gems_x {
+        for gy in 0..num_gems_y {
+            let pixel = resized_img.get_pixel(gx, gy);
             let srgb_pixel = Srgb::new(pixel[0] as f32 / 255.0, pixel[1] as f32 / 255.0, pixel[2] as f32 / 255.0);
             let lab_pixel: Lab = srgb_pixel.into_color();
 
@@ -69,12 +78,37 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
 
             let srgb_color: Srgb<u8> = Srgb::from_color(*closest_color).into_format();
             let (r, g, b) = srgb_color.into_components();
-            new_image_buffer.put_pixel(x, y, Rgba([r, g, b, 255]));
+            let gem_rgba = Rgba([r, g, b, 255]);
+
+            for px in 0..gem_pixels_on_final_image {
+                for py in 0..gem_pixels_on_final_image {
+                    gem_art_image.put_pixel(
+                        gx * gem_pixels_on_final_image + px,
+                        gy * gem_pixels_on_final_image + py,
+                        gem_rgba,
+                    );
+                }
+            }
         }
     }
 
+    let mut final_image = DynamicImage::new_rgba8(a4_width_px, a4_height_px);
+    // Fill with white background
+    for x in 0..a4_width_px {
+        for y in 0..a4_height_px {
+            final_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+        }
+    }
+
+    // Calculate top-left corner to paste the gem art
+    let paste_x = margin_px;
+    let paste_y = margin_px;
+
+    // Paste the gem art onto the final image
+    image::imageops::overlay(&mut final_image, &gem_art_image, paste_x as i64, paste_y as i64);
+
     let mut buf = Vec::new();
-    new_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
+    final_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
     let encoded_data = general_purpose::STANDARD.encode(&buf);
     Ok(format!("data:image/png;base64,{}", encoded_data))
 }
