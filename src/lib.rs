@@ -9,7 +9,7 @@ use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
 use std::str::FromStr;
-use gloo_dialogs::alert;
+
 
 fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
@@ -201,21 +201,23 @@ fn app() -> Html {
         })
     };
 
-    let generate = {
-        let image_data = image_data.clone();
-        let colors = colors.clone();
-        let generated_image_data = generated_image_data.clone();
-        Callback::from(move |_| {
+    
+
+    let generated_image_data_for_effect = generated_image_data.clone();
+    use_effect_with_deps(
+        move |(image_data, colors)| {
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, &colors) {
-                    Ok(data) => generated_image_data.set(Some(data)),
-                    Err(e) => {
-                        alert(&e);
+                match generate_gem_art(image_data, colors) {
+                    Ok(data) => generated_image_data_for_effect.set(Some(data)),
+                    Err(_e) => {
+                        // Handle error, e.g., display an alert
+                        // alert(&e);
                     }
                 }
             }
-        })
-    };
+        },
+        (image_data.clone(), colors.clone()),
+    );
 
     let download = {
         let generated_image_data = generated_image_data.clone();
@@ -262,14 +264,20 @@ fn app() -> Html {
     html! {
         <div>
             <h1>{ "Gem Art Creator" }</h1>
-            <div>
-                <h2>{ "1. Upload Image" }</h2>
-                <input type="file" onchange={on_file_change} />
-                {if let Some(image_data) = (*image_data).as_ref() {
-                    html! { <img src={image_data.clone()} width="200" /> }
-                } else {
-                    html! {}
-                }}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2>{ "1. Upload Image" }</h2>
+                    <input type="file" onchange={on_file_change} />
+                    {if let Some(image_data) = (*image_data).as_ref() {
+                        html! { <img src={image_data.clone()} width="200" /> }
+                    } else {
+                        html! {}
+                    }}
+                </div>
+                <div>
+                    <h2>{ "5. Download" }</h2>
+                    <button onclick={download} disabled={(*generated_image_data).is_none()}>{ "Download" }</button>
+                </div>
             </div>
             <div>
                 <h2>{ "2. Available Gem Colors" }</h2>
@@ -286,17 +294,13 @@ fn app() -> Html {
                 }}) }
                 <button onclick={add_color}>{ "Add Color" }</button>
             </div>
-            <div>
-                <h2>{ "3. Generate" }</h2>
-                <button onclick={generate}>{ "Generate" }</button>
-            </div>
+            // <div>
+            //     <h2>{ "3. Generate" }</h2>
+            //     <button onclick={generate}>{ "Generate" }</button>
+            // </div>
             <div>
                 <h2>{ "4. Preview" }</h2>
                 <canvas id="preview-canvas"></canvas>
-            </div>
-            <div>
-                <h2>{ "5. Download" }</h2>
-                <button onclick={download} disabled={(*generated_image_data).is_none()}>{ "Download" }</button>
             </div>
         </div>
     }
