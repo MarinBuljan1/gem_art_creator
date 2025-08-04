@@ -238,13 +238,18 @@ canvas {
 
 .text-output-container {
     width: calc(100% - 22px);
-    height: 150px; 
+    max-height: 150px;
     border: 1px solid #ddd;
     border-radius: 8px;
     padding: 10px;
     margin-top: 20px;
     background-color: #f9f9f9;
     overflow-y: auto;
+    white-space: pre-wrap;
+
+    &:empty {
+        display: none;
+    }
 }
 
 .color-grid {
