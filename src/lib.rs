@@ -8,11 +8,11 @@ use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericI
 use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
+use std::collections::{HashSet, HashMap};
 
-use std::collections::HashSet;
 mod dmc_colors;
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, String> {
+fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, String), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
@@ -39,7 +39,6 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     let printable_width_mm = a4_width_mm - (2.0 * margin_mm);
     let printable_height_mm = a4_height_mm - (2.0 * margin_mm);
 
-    let (img_width, img_height) = img.dimensions();
     let aspect_ratio = img_width as f32 / img_height as f32;
 
     let (new_width_mm, new_height_mm) = if printable_width_mm / aspect_ratio <= printable_height_mm {
@@ -61,6 +60,8 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
         })
         .collect();
 
+    let mut color_counts: HashMap<String, u32> = HashMap::new();
+
     let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
     let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
     let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
@@ -73,17 +74,26 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
             let srgb_pixel = Srgb::new(pixel[0] as f32 / 255.0, pixel[1] as f32 / 255.0, pixel[2] as f32 / 255.0);
             let lab_pixel: Lab = srgb_pixel.into_color();
 
-            let mut closest_color = &gem_colors[0];
-            let mut min_distance = DeltaE::new(LabValue::new(lab_pixel.l, lab_pixel.a, lab_pixel.b).unwrap(), LabValue::new(closest_color.l, closest_color.a, closest_color.b).unwrap(), DE2000).value;
+            let mut closest_color_index = 0;
+            let mut min_distance = f32::MAX;
 
-            for color in &gem_colors[1..] {
-                let distance = DeltaE::new(LabValue::new(lab_pixel.l, lab_pixel.a, lab_pixel.b).unwrap(), LabValue::new(color.l, color.a, color.b).unwrap(), DE2000).value;
+            for (i, color) in gem_colors.iter().enumerate() {
+                let distance = DeltaE::new(
+                    LabValue::new(lab_pixel.l, lab_pixel.a, lab_pixel.b).unwrap(),
+                    LabValue::new(color.l, color.a, color.b).unwrap(),
+                    DE2000,
+                )
+                .value;
                 if distance < min_distance {
                     min_distance = distance;
-                    closest_color = color;
+                    closest_color_index = i;
                 }
             }
+            
+            let floss_number = &colors[closest_color_index].floss_number;
+            *color_counts.entry(floss_number.clone()).or_insert(0) += 1;
 
+            let closest_color = &gem_colors[closest_color_index];
             let srgb_color: Srgb<u8> = Srgb::from_color(*closest_color).into_format();
             let (r, g, b) = srgb_color.into_components();
             let gem_rgba = Rgba([r, g, b, 255]);
@@ -124,7 +134,18 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     let mut buf = Vec::new();
     final_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
     let encoded_data = general_purpose::STANDARD.encode(&buf);
-    Ok(format!("data:image/png;base64,{}", encoded_data))
+    let image_data_url = format!("data:image/png;base64,{}", encoded_data);
+
+    let mut sorted_counts: Vec<_> = color_counts.into_iter().collect();
+    sorted_counts.sort_by(|a, b| b.1.cmp(&a.1));
+
+    let mut gem_counts_text = String::new();
+    for (i, (floss, count)) in sorted_counts.iter().enumerate() {
+        let letter = (b'A' + i as u8) as char;
+        gem_counts_text.push_str(&format!("({}) #{}: {} gems\n", letter, floss, count));
+    }
+
+    Ok((image_data_url, gem_counts_text))
 }
 
 #[derive(Clone, PartialEq, Default)]
@@ -192,6 +213,7 @@ fn app() -> Html {
     let image_file = use_state::<Option<File>, _>(|| None);
     let image_data = use_state::<Option<String>, _>(|| None);
     let generated_image_data = use_state::<Option<String>, _>(|| None);
+    let gem_counts = use_state::<String, _>(|| String::new());
     let reader = use_state::<Option<FileReader>, _>(|| None);
 
     let file_input_ref = use_node_ref();
@@ -231,6 +253,7 @@ fn app() -> Html {
     };
 
     let generated_image_data_for_effect = generated_image_data.clone();
+    let gem_counts_for_effect = gem_counts.clone();
     let dmc_colors_for_effect = dmc_colors.clone();
     use_effect_with_deps(
         move |(image_data, selected_dmc_colors)| {
@@ -241,8 +264,7 @@ fn app() -> Html {
                     current_dmc_colors.iter().find(|dmc_color| &dmc_color.floss == floss)
                 })
                 .map(|dmc_color| Color {
-                    // id: 0, // ID is not used in generate_gem_art, removed
-                    value: format!("#{}", dmc_color.hex), // Use hex from DmcColor
+                    value: format!("#{}", dmc_color.hex),
                     floss_number: dmc_color.floss.clone(),
                     r: dmc_color.r,
                     g: dmc_color.g,
@@ -253,15 +275,18 @@ fn app() -> Html {
 
             if colors_for_generation.is_empty() {
                 generated_image_data_for_effect.set(None);
+                gem_counts_for_effect.set(String::new());
                 return;
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
                 match generate_gem_art(image_data, &colors_for_generation) {
-                    Ok(data) => generated_image_data_for_effect.set(Some(data)),
+                    Ok((data, counts)) => {
+                        generated_image_data_for_effect.set(Some(data));
+                        gem_counts_for_effect.set(counts);
+                    }
                     Err(_e) => {
-                        // Handle error, e.g., display an alert
-                        // alert(&e);
+                        // Handle error
                     }
                 }
             }
@@ -353,6 +378,9 @@ fn app() -> Html {
                                 }
                             })
                         } }
+                    </div>
+                    <div class="text-output-container">
+                        { (*gem_counts).clone() }
                     </div>
                 </div>
             </div>
