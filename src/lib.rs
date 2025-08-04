@@ -8,6 +8,9 @@ use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericI
 use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
+use imageproc::drawing::draw_hollow_circle_mut;
+use imageproc::drawing::draw_text_mut;
+use rusttype::{Font, Scale};
 use std::collections::{HashSet, HashMap};
 
 mod dmc_colors;
@@ -86,6 +89,9 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
 
     let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
 
+    let font_data = include_bytes!("../static/DejaVuSans.ttf");
+    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+
     for gx in 0..num_gems_x {
         for gy in 0..num_gems_y {
             let pixel = resized_img.get_pixel(gx, gy);
@@ -126,6 +132,20 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
                     );
                 }
             }
+
+            let center_x = (gx * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
+            let center_y = (gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
+            let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
+
+            let blended_r = (gem_rgba[0] as u16 + 255) / 2;
+            let blended_g = (gem_rgba[1] as u16 + 255) / 2;
+            let blended_b = (gem_rgba[2] as u16 + 255) / 2;
+            let blended_rgba = Rgba([blended_r as u8, blended_g as u8, blended_b as u8, 255]);
+            draw_hollow_circle_mut(&mut gem_art_image, (center_x, center_y), radius, blended_rgba);
+
+            let letter = to_excel_column(closest_color_index + 1);
+            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.8);
+            draw_text_mut(&mut gem_art_image, blended_rgba, center_x, center_y, scale, &font, &letter);
         }
     }
 
