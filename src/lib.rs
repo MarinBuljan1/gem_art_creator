@@ -204,7 +204,6 @@ fn app() -> Html {
             }
         })
     };
-        
 
     let on_file_change = {
         let image_file = image_file.clone();
@@ -309,61 +308,51 @@ fn app() -> Html {
     );
 
     html! {
-        <div>
-            <h1>{ "Gem Art Creator" }</h1>
-            <div class="section flex-row-around" style="margin-bottom: 20px;">
-                <div>
-                    <h2>{ "1. Upload Image" }</h2>
+        <div class="main-container">
+            <div class="left-panel">
+                <h1>{ "Gem Art Creator" }</h1>
+                <div class="section flex-row-around" style="margin-bottom: 20px;">
                     <input ref={file_input_ref} type="file" onchange={on_file_change} style="display: none;" />
                     <button onclick={on_upload_button_click}>{ "Upload Image" }</button>
-                </div>
-                <div>
-                    <h2>{ "5. Download" }</h2>
                     <button onclick={download} disabled={(*generated_image_data).is_none()}>{ "Download" }</button>
                 </div>
-            </div>
-            <div class="section">
-                <h2>{ "2. Available Gem Colors" }</h2>
-                <div class="flex-row-around" style="width: 90vw; margin-bottom: 10px;">
-                    <div>
-                        <button onclick={on_sort_by_color_click} disabled={!*sort_by_number}>{ "Sort by Colour" }</button>
-                        <button onclick={on_sort_by_number_click} disabled={*sort_by_number}>{ "Sort by Number" }</button>
+                <div class="section colours">
+                    <div class="flex-row-around">
+                        <div class="sort-buttons">
+                            <button onclick={on_sort_by_color_click} disabled={!*sort_by_number}>{ "Sort by Colour" }</button>
+                            <button onclick={on_sort_by_number_click} disabled={*sort_by_number}>{ "Sort by Number" }</button>
+                        </div>
+                        <div class="select-buttons">
+                            <button onclick={on_select_all_click}>{ "Select All" }</button>
+                            <button onclick={on_deselect_all_click}>{ "Deselect All" }</button>
+                        </div>
                     </div>
-                    <div>
-                        <button onclick={on_select_all_click}>{ "Select All" }</button>
-                        <button onclick={on_deselect_all_click}>{ "Deselect All" }</button>
-                    </div>
-                </div>
-                <div class="color-grid">
-                    { for {
-                        let mut sorted_dmc_colors = (*dmc_colors).clone();
-                        if *sort_by_number {
-                            sorted_dmc_colors.sort_by(|a, b| a.floss.cmp(&b.floss));
-                        }
-                        sorted_dmc_colors.into_iter().map(|dmc_color| {
-                            let floss = dmc_color.floss.clone();
-                            let is_selected = selected_dmc_colors.contains(&floss);
-                            let background_style = format!("background-color: #{};", dmc_color.hex);
-                            html! {
-                                <div
-                                    key={floss.clone()}
-                                    class={classes!("color-item", is_selected.then_some("selected"))}
-                                    style={background_style}
-                                    onclick={on_dmc_color_click.reform(move |_| floss.clone())}
-                                >
-                                    { &dmc_color.floss }
-                                </div>
+                    <div class="color-grid">
+                        { for {
+                            let mut sorted_dmc_colors = (*dmc_colors).clone();
+                            if *sort_by_number {
+                                sorted_dmc_colors.sort_by(|a, b| a.floss.cmp(&b.floss));
                             }
-                        })
-                    } }
+                            sorted_dmc_colors.into_iter().map(|dmc_color| {
+                                let floss = dmc_color.floss.clone();
+                                let is_selected = selected_dmc_colors.contains(&floss);
+                                let background_style = format!("background-color: #{};", dmc_color.hex);
+                                html! {
+                                    <div
+                                        key={floss.clone()}
+                                        class={classes!("color-item", is_selected.then_some("selected"))}
+                                        style={background_style}
+                                        onclick={on_dmc_color_click.reform(move |_| floss.clone())}
+                                    >
+                                        { &dmc_color.floss }
+                                    </div>
+                                }
+                            })
+                        } }
+                    </div>
                 </div>
             </div>
-            // <div>
-            //     <h2>{ "3. Generate" }</h2>
-            //     <button onclick={generate}>{ "Generate" }</button>
-            // </div>
-            <div class="section">
-                <h2>{ "4. Preview" }</h2>
+            <div class="right-panel">
                 <canvas id="preview-canvas"></canvas>
             </div>
         </div>
