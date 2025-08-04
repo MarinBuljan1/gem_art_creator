@@ -271,7 +271,7 @@ canvas {
     font-weight: bolder;
     font-size: small;
     text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-    -webkit-text-stroke: 0.5px black; /* width & color of border */
+    -webkit-text-stroke: 0.5px black;
 }
 
 .color-grid {
@@ -301,7 +301,7 @@ canvas {
     font-size: 0.8em;
     font-weight: bold;
     color: #fff; /* Default text color for contrast */
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
 
     &.selected {
         border-color: $accent-color;

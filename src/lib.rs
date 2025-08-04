@@ -137,15 +137,24 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
             let center_y = (gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
             let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
 
-            let blended_r = (gem_rgba[0] as u16 + 255) / 2;
-            let blended_g = (gem_rgba[1] as u16 + 255) / 2;
-            let blended_b = (gem_rgba[2] as u16 + 255) / 2;
+            let mut blend_towards_colour = 255;
+            if (r/3 + g/3 + b/3) > 128 {
+                blend_towards_colour = 0
+            }
+            let blended_r = (r as u16 + blend_towards_colour) / 2;
+            let blended_g = (g as u16 + blend_towards_colour) / 2;
+            let blended_b = (b as u16 + blend_towards_colour) / 2;
             let blended_rgba = Rgba([blended_r as u8, blended_g as u8, blended_b as u8, 255]);
             draw_hollow_circle_mut(&mut gem_art_image, (center_x, center_y), radius, blended_rgba);
 
             let letter = to_excel_column(closest_color_index + 1);
-            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.8);
-            draw_text_mut(&mut gem_art_image, blended_rgba, center_x, center_y, scale, &font, &letter);
+            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
+            let v_metrics = font.v_metrics(scale);
+            let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
+            let glyphs_width = glyphs.iter().map(|g| g.pixel_bounding_box().unwrap().width() as f32).sum::<f32>();
+            let text_x = center_x - (glyphs_width / 2.0) as i32;
+            let text_y = center_y - (v_metrics.ascent - v_metrics.descent) as i32 / 2;
+            draw_text_mut(&mut gem_art_image, blended_rgba, text_x, text_y, scale, &font, &letter);
         }
     }
 
