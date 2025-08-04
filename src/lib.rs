@@ -8,8 +8,9 @@ use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericI
 use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
-use std::str::FromStr;
 
+use std::collections::HashSet;
+mod dmc_colors;
 
 fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
@@ -55,7 +56,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
     let gem_colors: Vec<Lab> = colors
         .iter()
         .map(|c| {
-            let srgb: Srgb<f32> = Srgb::from_str(&c.value).unwrap().into_format();
+            let srgb: Srgb<f32> = Srgb::new(c.r as f32 / 255.0, c.g as f32 / 255.0, c.b as f32 / 255.0);
             srgb.into_linear().into_color()
         })
         .collect();
@@ -128,18 +129,82 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<String, Str
 
 #[derive(Clone, PartialEq, Default)]
 struct Color {
-    id: usize,
-    value: String,
+    // id: usize, // Removed
+    value: String, // This will store the hex color string
+    floss_number: String,
+    // Add RGB components for direct use in generate_gem_art
+    r: u8,
+    g: u8,
+    b: u8,
+    hex: String,
 }
 
 #[function_component(App)]
 fn app() -> Html {
-    let colors = use_state(|| vec![Color { id: 0, value: "#000000".to_string() }]);
-    let next_color_id = use_state(|| 1);
+    let dmc_colors = use_state(|| dmc_colors::get_dmc_colors()); // Corrected import
+    let selected_dmc_colors = use_state(|| {
+        dmc_colors::get_dmc_colors().into_iter().map(|c| c.floss).collect::<HashSet<String>>()
+    });
+    let sort_by_number = use_state(|| false);
+
+    let on_sort_by_color_click = {
+        let sort_by_number = sort_by_number.clone();
+        Callback::from(move |_| {
+            sort_by_number.set(false);
+        })
+    };
+
+    let on_sort_by_number_click = {
+        let sort_by_number = sort_by_number.clone();
+        Callback::from(move |_| {
+            sort_by_number.set(true);
+        })
+    };
+
+    let on_select_all_click = {
+        let selected_dmc_colors = selected_dmc_colors.clone();
+        let dmc_colors = dmc_colors.clone();
+        Callback::from(move |_| {
+            let all_floss_numbers = (*dmc_colors).iter().map(|c| c.floss.clone()).collect();
+            selected_dmc_colors.set(all_floss_numbers);
+        })
+    };
+
+    let on_deselect_all_click = {
+        let selected_dmc_colors = selected_dmc_colors.clone();
+        Callback::from(move |_| {
+            selected_dmc_colors.set(HashSet::<String>::new());
+        })
+    };
+
+    let on_dmc_color_click = {
+        let selected_dmc_colors = selected_dmc_colors.clone();
+        Callback::from(move |floss: String| {
+            let mut current_selection = (*selected_dmc_colors).clone();
+            if current_selection.contains(&floss) {
+                current_selection.remove(&floss);
+            } else {
+                current_selection.insert(floss);
+            }
+            selected_dmc_colors.set(current_selection);
+        })
+    };
     let image_file = use_state::<Option<File>, _>(|| None);
     let image_data = use_state::<Option<String>, _>(|| None);
     let generated_image_data = use_state::<Option<String>, _>(|| None);
     let reader = use_state::<Option<FileReader>, _>(|| None);
+
+    let file_input_ref = use_node_ref();
+
+    let on_upload_button_click = {
+        let file_input_ref = file_input_ref.clone();
+        Callback::from(move |_| {
+            if let Some(input) = file_input_ref.cast::<HtmlInputElement>() {
+                input.click();
+            }
+        })
+    };
+        
 
     let on_file_change = {
         let image_file = image_file.clone();
@@ -161,53 +226,35 @@ fn app() -> Html {
         })
     };
 
-    let add_color = {
-        let colors = colors.clone();
-        let next_color_id = next_color_id.clone();
-        Callback::from(move |_| {
-            let mut new_colors = (*colors).clone();
-            new_colors.push(Color {
-                id: *next_color_id,
-                value: "#000000".to_string(),
-            });
-            colors.set(new_colors);
-            next_color_id.set(*next_color_id + 1);
-        })
-    };
-
-    let delete_color = {
-        let colors = colors.clone();
-        Callback::from(move |id: usize| {
-            let new_colors = (*colors).clone().into_iter().filter(|c| c.id != id).collect();
-            colors.set(new_colors);
-        })
-    };
-
-    let on_color_change = {
-        let colors = colors.clone();
-        Callback::from(move |(id, value): (usize, String)| {
-            let new_colors = (*colors)
-                .clone()
-                .into_iter()
-                .map(|c| {
-                    if c.id == id {
-                        Color { id, value: value.clone() }
-                    } else {
-                        c
-                    }
+    let generated_image_data_for_effect = generated_image_data.clone();
+    let dmc_colors_for_effect = dmc_colors.clone();
+    use_effect_with_deps(
+        move |(image_data, selected_dmc_colors)| {
+            let current_dmc_colors = dmc_colors_for_effect.clone();
+            let colors_for_generation: Vec<Color> = selected_dmc_colors
+                .iter()
+                .filter_map(|floss| {
+                    current_dmc_colors.iter().find(|dmc_color| &dmc_color.floss == floss)
+                })
+                .map(|dmc_color| Color {
+                    // id: 0, // ID is not used in generate_gem_art, removed
+                    value: format!("#{}", dmc_color.hex), // Use hex from DmcColor
+                    floss_number: dmc_color.floss.clone(),
+                    r: dmc_color.r,
+                    g: dmc_color.g,
+                    b: dmc_color.b,
+                    hex: dmc_color.hex.clone(),
                 })
                 .collect();
-            colors.set(new_colors);
-        })
-    };
 
-    
+            if colors_for_generation.is_empty() {
+                generated_image_data_for_effect.set(None);
+                web_sys::console::log_1(&"No colors selected, skipping gem art generation.".into());
+                return;
+            }
 
-    let generated_image_data_for_effect = generated_image_data.clone();
-    use_effect_with_deps(
-        move |(image_data, colors)| {
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, colors) {
+                match generate_gem_art(image_data, &colors_for_generation) {
                     Ok(data) => generated_image_data_for_effect.set(Some(data)),
                     Err(_e) => {
                         // Handle error, e.g., display an alert
@@ -216,7 +263,7 @@ fn app() -> Html {
                 }
             }
         },
-        (image_data.clone(), colors.clone()),
+        (image_data.clone(), selected_dmc_colors.clone()),
     );
 
     let download = {
@@ -264,41 +311,58 @@ fn app() -> Html {
     html! {
         <div>
             <h1>{ "Gem Art Creator" }</h1>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="section flex-row-around" style="margin-bottom: 20px;">
                 <div>
                     <h2>{ "1. Upload Image" }</h2>
-                    <input type="file" onchange={on_file_change} />
-                    {if let Some(image_data) = (*image_data).as_ref() {
-                        html! { <img src={image_data.clone()} width="200" /> }
-                    } else {
-                        html! {}
-                    }}
+                    <input ref={file_input_ref} type="file" onchange={on_file_change} style="display: none;" />
+                    <button onclick={on_upload_button_click}>{ "Upload Image" }</button>
                 </div>
                 <div>
                     <h2>{ "5. Download" }</h2>
                     <button onclick={download} disabled={(*generated_image_data).is_none()}>{ "Download" }</button>
                 </div>
             </div>
-            <div>
+            <div class="section">
                 <h2>{ "2. Available Gem Colors" }</h2>
-                { for colors.iter().map(|c| {
-                    let c = c.clone();
-                    html! {
-                    <div key={c.id}>
-                        <input type="color" value={c.value.clone()} onchange={on_color_change.reform(move |e: Event| {
-                            let input: HtmlInputElement = e.target_unchecked_into();
-                            (c.id, input.value())
-                        })} />
-                        <button onclick={delete_color.reform(move |_| c.id)}>{ "Delete" }</button>
+                <div class="flex-row-around" style="width: 90vw; margin-bottom: 10px;">
+                    <div>
+                        <button onclick={on_sort_by_color_click} disabled={!*sort_by_number}>{ "Sort by Colour" }</button>
+                        <button onclick={on_sort_by_number_click} disabled={*sort_by_number}>{ "Sort by Number" }</button>
                     </div>
-                }}) }
-                <button onclick={add_color}>{ "Add Color" }</button>
+                    <div>
+                        <button onclick={on_select_all_click}>{ "Select All" }</button>
+                        <button onclick={on_deselect_all_click}>{ "Deselect All" }</button>
+                    </div>
+                </div>
+                <div class="color-grid">
+                    { for {
+                        let mut sorted_dmc_colors = (*dmc_colors).clone();
+                        if *sort_by_number {
+                            sorted_dmc_colors.sort_by(|a, b| a.floss.cmp(&b.floss));
+                        }
+                        sorted_dmc_colors.into_iter().map(|dmc_color| {
+                            let floss = dmc_color.floss.clone();
+                            let is_selected = selected_dmc_colors.contains(&floss);
+                            let background_style = format!("background-color: #{};", dmc_color.hex);
+                            html! {
+                                <div
+                                    key={floss.clone()}
+                                    class={classes!("color-item", is_selected.then_some("selected"))}
+                                    style={background_style}
+                                    onclick={on_dmc_color_click.reform(move |_| floss.clone())}
+                                >
+                                    { &dmc_color.floss }
+                                </div>
+                            }
+                        })
+                    } }
+                </div>
             </div>
             // <div>
             //     <h2>{ "3. Generate" }</h2>
             //     <button onclick={generate}>{ "Generate" }</button>
             // </div>
-            <div>
+            <div class="section">
                 <h2>{ "4. Preview" }</h2>
                 <canvas id="preview-canvas"></canvas>
             </div>
