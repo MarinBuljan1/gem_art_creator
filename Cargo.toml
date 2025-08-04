@@ -21,6 +21,7 @@ wasm-bindgen-futures = "0.4"
 web-sys = { version = "0.3", features = ["Window", "Element", "EventTarget", "TouchEvent", "HtmlElement", "Touch", "DomTokenList", "Document", "FileList", "File", "FileReader", "HtmlCanvasElement", "CanvasRenderingContext2d", "ImageData", "HtmlImageElement", "HtmlAnchorElement"] }
 gloo-file = "0.3"
 gloo-dialogs = "0.1"
+gloo-timers = { version = "0.3", features = ["futures"] }
 image = "0.24"
 base64 = "0.21"
 deltae = "0.2.1"

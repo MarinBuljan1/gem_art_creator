@@ -200,10 +200,15 @@ fn app() -> Html {
         let file_input_ref = file_input_ref.clone();
         Callback::from(move |_| {
             if let Some(input) = file_input_ref.cast::<HtmlInputElement>() {
-                input.click();
+                let input = input.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    gloo_timers::future::TimeoutFuture::new(0).await;
+                    input.click();
+                });
             }
         })
     };
+
 
     let on_file_change = {
         let image_file = image_file.clone();
@@ -248,7 +253,6 @@ fn app() -> Html {
 
             if colors_for_generation.is_empty() {
                 generated_image_data_for_effect.set(None);
-                web_sys::console::log_1(&"No colors selected, skipping gem art generation.".into());
                 return;
             }
 
