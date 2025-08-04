@@ -53,6 +53,8 @@ body {
     align-items: center;
     padding: 20px;
     background-color: $background-color;
+    box-sizing: border-box;
+    height: 100vh;
 
     @media (max-width: 768px) {
         width: 100%;
@@ -221,10 +223,9 @@ button.delete-color {
 canvas {
     border: 2px solid $primary-color;
     border-radius: 10px;
-    margin-top: 20px;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     max-width: 100%;
-    height: auto;
+    max-height: 100%;
 }
 
 .colours {
@@ -292,5 +293,9 @@ canvas {
     button {
         padding: 10px 20px;
         font-size: 1em;
+    }
+
+    .colours {
+        max-height: 40vh;
     }
 }
