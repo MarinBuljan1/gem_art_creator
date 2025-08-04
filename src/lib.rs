@@ -12,6 +12,13 @@ use std::collections::{HashSet, HashMap};
 
 mod dmc_colors;
 
+#[derive(Clone, PartialEq)]
+struct GemCount {
+    floss: String,
+    count: u32,
+    hex: String,
+}
+
 fn to_excel_column(num: usize) -> String {
     let mut s = String::new();
     let mut n = num;
@@ -23,7 +30,7 @@ fn to_excel_column(num: usize) -> String {
     s
 }
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, String), String> {
+fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Vec<GemCount>), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
@@ -71,7 +78,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, St
         })
         .collect();
 
-    let mut color_counts: HashMap<String, u32> = HashMap::new();
+    let mut color_counts: HashMap<String, (u32, String)> = HashMap::new();
 
     let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
     let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
@@ -101,8 +108,9 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, St
                 }
             }
             
-            let floss_number = &colors[closest_color_index].floss_number;
-            *color_counts.entry(floss_number.clone()).or_insert(0) += 1;
+            let color_info = &colors[closest_color_index];
+            let entry = color_counts.entry(color_info.floss_number.clone()).or_insert((0, color_info.hex.clone()));
+            entry.0 += 1;
 
             let closest_color = &gem_colors[closest_color_index];
             let srgb_color: Srgb<u8> = Srgb::from_color(*closest_color).into_format();
@@ -147,16 +155,10 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, St
     let encoded_data = general_purpose::STANDARD.encode(&buf);
     let image_data_url = format!("data:image/png;base64,{}", encoded_data);
 
-    let mut sorted_counts: Vec<_> = color_counts.into_iter().collect();
-    sorted_counts.sort_by(|a, b| b.1.cmp(&a.1));
+    let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex }).collect();
+    sorted_counts.sort_by(|a, b| b.count.cmp(&a.count));
 
-    let mut gem_counts_text = String::new();
-    for (i, (floss, count)) in sorted_counts.iter().enumerate() {
-        let letter = to_excel_column(i + 1);
-        gem_counts_text.push_str(&format!("({}) #{}: {} gems\n", letter, floss, count));
-    }
-
-    Ok((image_data_url, gem_counts_text))
+    Ok((image_data_url, sorted_counts))
 }
 
 #[derive(Clone, PartialEq, Default)]
@@ -224,7 +226,7 @@ fn app() -> Html {
     let image_file = use_state::<Option<File>, _>(|| None);
     let image_data = use_state::<Option<String>, _>(|| None);
     let generated_image_data = use_state::<Option<String>, _>(|| None);
-    let gem_counts = use_state::<String, _>(|| String::new());
+    let gem_counts = use_state::<Vec<GemCount>, _>(|| vec![]);
     let reader = use_state::<Option<FileReader>, _>(|| None);
 
     let file_input_ref = use_node_ref();
@@ -286,7 +288,7 @@ fn app() -> Html {
 
             if colors_for_generation.is_empty() {
                 generated_image_data_for_effect.set(None);
-                gem_counts_for_effect.set(String::new());
+                gem_counts_for_effect.set(vec![]);
                 return;
             }
 
@@ -391,7 +393,16 @@ fn app() -> Html {
                         } }
                     </div>
                     <div class="text-output-container">
-                        { (*gem_counts).clone() }
+                        { for (*gem_counts).iter().enumerate().map(|(i, count)| {
+                            let letter = to_excel_column(i + 1);
+                            let circle_style = format!("background-color: #{};", count.hex);
+                            html! {
+                                <div class="gem-count-line">
+                                    <span class="gem-count-circle" style={circle_style}>{ letter }</span>
+                                    <span>{ format!(" #{}: {} gems", count.floss, count.count) }</span>
+                                </div>
+                            }
+                        }) }
                     </div>
                 </div>
             </div>

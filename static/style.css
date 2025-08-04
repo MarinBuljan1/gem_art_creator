@@ -236,6 +236,28 @@ canvas {
   display: none;
 }
 
+.gem-count-line {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.gem-count-circle {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid black;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  color: white;
+  font-weight: bolder;
+  font-size: small;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  -webkit-text-stroke: 0.5px black; /* width & color of border */
+}
+
 .color-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
