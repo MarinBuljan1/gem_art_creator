@@ -8,8 +8,7 @@ use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericI
 use base64::{engine::general_purpose, Engine as _};
 use deltae::{DeltaE, LabValue, DE2000};
 use palette::{Srgb, Lab, IntoColor, FromColor};
-use imageproc::drawing::draw_hollow_circle_mut;
-use imageproc::drawing::draw_text_mut;
+use imageproc::drawing::{draw_hollow_circle_mut, draw_text_mut, draw_filled_circle_mut};
 use rusttype::{Font, Scale};
 use std::collections::{HashSet, HashMap};
 
@@ -196,6 +195,70 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
     Ok((image_data_url, sorted_counts))
 }
 
+
+
+fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String> {
+    let a4_width_mm = 210.0;
+    let a4_height_mm = 297.0;
+    let margin_mm = 10.0;
+    let dpi = 300.0;
+    let mm_per_inch = 25.4;
+    let pixels_per_mm = dpi / mm_per_inch;
+
+    let a4_width_px = (a4_width_mm * pixels_per_mm) as u32;
+    let a4_height_px = (a4_height_mm * pixels_per_mm) as u32;
+    let margin_px = (margin_mm * pixels_per_mm) as u32;
+
+    let mut text_image = DynamicImage::new_rgba8(a4_width_px, a4_height_px);
+    for x in 0..a4_width_px {
+        for y in 0..a4_height_px {
+            text_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+        }
+    }
+
+    let font_data = include_bytes!("../static/DejaVuSans.ttf");
+    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+    let scale = Scale::uniform(48.0);
+    let text_color = Rgba([0, 0, 0, 255]);
+    let line_height = 80;
+    let column_width = (a4_width_px - 2 * margin_px) / 3;
+
+    let mut x = margin_px;
+    let mut y = margin_px;
+    let max_y = a4_height_px - margin_px;
+
+    for (i, count) in gem_counts.iter().enumerate() {
+        if y + line_height > max_y {
+            y = margin_px;
+            x += column_width;
+        }
+
+        let letter = to_excel_column(i + 1);
+        let r = u8::from_str_radix(&count.hex[0..2], 16).unwrap();
+        let g = u8::from_str_radix(&count.hex[2..4], 16).unwrap();
+        let b = u8::from_str_radix(&count.hex[4..6], 16).unwrap();
+        let circle_color = Rgba([r, g, b, 255]);
+
+        let v_metrics = font.v_metrics(scale);
+        let circle_y = y as i32 + (v_metrics.ascent - v_metrics.descent) as i32 / 2;
+
+        draw_filled_circle_mut(&mut text_image, (x as i32 + 20, circle_y), 15, circle_color);
+        draw_text_mut(&mut text_image, text_color, x as i32 + 50, y as i32, scale, &font, &letter);
+
+        let line = format!(" - #{}: {} gems", count.floss, count.count);
+        draw_text_mut(&mut text_image, text_color, x as i32 + 100, y as i32, scale, &font, &line);
+
+        y += line_height;
+    }
+
+    let mut buf = Vec::new();
+    text_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
+    let encoded_data = general_purpose::STANDARD.encode(&buf);
+    let image_data_url = format!("data:image/png;base64,{}", encoded_data);
+
+    Ok(image_data_url)
+}
+
 #[derive(Clone, PartialEq, Default)]
 struct Color {
     // id: usize, // Removed
@@ -344,6 +407,7 @@ fn app() -> Html {
 
     let download = {
         let generated_image_data = generated_image_data.clone();
+        let gem_counts = gem_counts.clone();
         Callback::from(move |_| {
             if let Some(data) = (*generated_image_data).as_ref() {
                 let document = web_sys::window().unwrap().document().unwrap();
@@ -351,6 +415,15 @@ fn app() -> Html {
                 let link: web_sys::HtmlAnchorElement = link.dyn_into().unwrap();
                 link.set_href(data);
                 link.set_download("gem_art.png");
+                link.click();
+            }
+
+            if let Ok(text_image_data) = generate_text_image(&gem_counts) {
+                let document = web_sys::window().unwrap().document().unwrap();
+                let link = document.create_element("a").unwrap();
+                let link: web_sys::HtmlAnchorElement = link.dyn_into().unwrap();
+                link.set_href(&text_image_data);
+                link.set_download("gem_art_legend.png");
                 link.click();
             }
         })
