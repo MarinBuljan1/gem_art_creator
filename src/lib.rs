@@ -408,7 +408,17 @@ fn app() -> Html {
                         { for {
                             let mut sorted_dmc_colors = (*dmc_colors).clone();
                             if *sort_by_number {
-                                sorted_dmc_colors.sort_by(|a, b| a.floss.cmp(&b.floss));
+                                sorted_dmc_colors.sort_by(|a, b| {
+                                    let a_num = a.floss.parse::<u32>();
+                                    let b_num = b.floss.parse::<u32>();
+
+                                    match (a_num, b_num) {
+                                        (Ok(a_val), Ok(b_val)) => a_val.cmp(&b_val),
+                                        (Ok(_), Err(_)) => std::cmp::Ordering::Less,
+                                        (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
+                                        (Err(_), Err(_)) => a.floss.cmp(&b.floss),
+                                    }
+                                });
                             }
                             sorted_dmc_colors.into_iter().map(|dmc_color| {
                                 let floss = dmc_color.floss.clone();
