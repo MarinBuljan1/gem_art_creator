@@ -48,7 +48,6 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
 
     let (img_width, img_height) = img.dimensions();
 
-    // Adjust A4 dimensions if the image is landscape
     if img_width > img_height {
         std::mem::swap(&mut a4_width_mm, &mut a4_height_mm);
     }
@@ -82,15 +81,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
         .collect();
 
     let mut color_counts: HashMap<String, (u32, String)> = HashMap::new();
-
-    let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
-    let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
-    let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
-
-    let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
-
-    let font_data = include_bytes!("../static/DejaVuSans.ttf");
-    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+    let mut gem_grid = Vec::with_capacity((num_gems_x * num_gems_y) as usize);
 
     for gx in 0..num_gems_x {
         for gy in 0..num_gems_y {
@@ -117,7 +108,30 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
             let color_info = &colors[closest_color_index];
             let entry = color_counts.entry(color_info.floss_number.clone()).or_insert((0, color_info.hex.clone()));
             entry.0 += 1;
+            gem_grid.push(closest_color_index);
+        }
+    }
 
+    let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex }).collect();
+    sorted_counts.sort_by(|a, b| b.count.cmp(&a.count));
+
+    let letter_map: HashMap<String, String> = sorted_counts
+        .iter()
+        .enumerate()
+        .map(|(i, gem_count)| (gem_count.floss.clone(), to_excel_column(i + 1)))
+        .collect();
+
+    let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
+    let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
+    let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
+    let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
+    let font_data = include_bytes!("../static/DejaVuSans.ttf");
+    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+
+    for gx in 0..num_gems_x {
+        for gy in 0..num_gems_y {
+            let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
+            let color_info = &colors[closest_color_index];
             let closest_color = &gem_colors[closest_color_index];
             let srgb_color: Srgb<u8> = Srgb::from_color(*closest_color).into_format();
             let (r, g, b) = srgb_color.into_components();
@@ -147,7 +161,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
             let blended_rgba = Rgba([blended_r as u8, blended_g as u8, blended_b as u8, 255]);
             draw_hollow_circle_mut(&mut gem_art_image, (center_x, center_y), radius, blended_rgba);
 
-            let letter = to_excel_column(closest_color_index + 1);
+            let letter = letter_map.get(&color_info.floss_number).unwrap();
             let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
             let v_metrics = font.v_metrics(scale);
             let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
@@ -159,33 +173,25 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
     }
 
     let mut final_image = DynamicImage::new_rgba8(a4_width_px, a4_height_px);
-    // Fill with white background
     for x in 0..a4_width_px {
         for y in 0..a4_height_px {
             final_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
         }
     }
 
-    // Calculate top-left corner to paste the gem art
     let available_width_px = a4_width_px - (2 * margin_px);
     let available_height_px = a4_height_px - (2 * margin_px);
-
     let offset_x = (available_width_px - gem_art_width_px) / 2;
     let offset_y = (available_height_px - gem_art_height_px) / 2;
-
     let paste_x = margin_px + offset_x;
     let paste_y = margin_px + offset_y;
 
-    // Paste the gem art onto the final image
     image::imageops::overlay(&mut final_image, &gem_art_image, paste_x as i64, paste_y as i64);
 
     let mut buf = Vec::new();
     final_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
     let encoded_data = general_purpose::STANDARD.encode(&buf);
     let image_data_url = format!("data:image/png;base64,{}", encoded_data);
-
-    let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex }).collect();
-    sorted_counts.sort_by(|a, b| b.count.cmp(&a.count));
 
     Ok((image_data_url, sorted_counts))
 }
