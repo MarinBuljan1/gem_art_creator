@@ -297,6 +297,14 @@ canvas {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
+.settings-button {
+  padding: 12px 25px;
+  margin: 10px;
+  font-size: 1.3em;
+  background-color: rgba(0, 0, 0, 0);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0);
+}
+
 @media (max-width: 768px) {
   body {
     padding: 10px;

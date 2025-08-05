@@ -278,11 +278,19 @@ fn app() -> Html {
         dmc_colors::get_dmc_colors().into_iter().map(|c| c.floss).collect::<HashSet<String>>()
     });
     let sort_by_number = use_state(|| false);
+    let is_settings_open = use_state(|| false);
 
     let on_sort_by_color_click = {
         let sort_by_number = sort_by_number.clone();
         Callback::from(move |_| {
             sort_by_number.set(false);
+        })
+    };
+
+    let on_settings_click = {
+        let is_settings_open = is_settings_open.clone();
+        Callback::from(move |_| {
+            is_settings_open.set(!*is_settings_open);
         })
     };
 
@@ -465,7 +473,17 @@ fn app() -> Html {
                     <input ref={file_input_ref} type="file" onchange={on_file_change} style="display: none;" />
                     <button onclick={on_upload_button_click}>{ "Upload Image" }</button>
                     <button onclick={download} disabled={(*generated_image_data).is_none()}>{ "Download" }</button>
+                    <button onclick={on_settings_click} class="settings-button">{ "⚙️" }</button>
                 </div>
+                { if *is_settings_open {
+                    html! {
+                        <div class="section settings">
+                            <p>{ "Settings" }</p>
+                        </div>
+                    }
+                } else {
+                    html! {}
+                } }
                 <div class="section colours">
                     <div class="flex-row-around">
                         <div class="sort-buttons">
