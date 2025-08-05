@@ -25,7 +25,8 @@ pub fn get_dmc_colors() -> Vec<DmcColor> {
 
     let mut colors = Vec::new();
     for result in reader.deserialize() {
-        let color: DmcColor = result.unwrap();
+        let mut color: DmcColor = result.unwrap();
+        color.hex = format!("{:02x}{:02x}{:02x}", color.r, color.g, color.b);
         colors.push(color);
     }
     colors
