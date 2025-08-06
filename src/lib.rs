@@ -20,7 +20,7 @@ enum ImageFitOption {
     Crop,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 struct GemCount {
     floss: String,
     count: u32,
@@ -478,7 +478,7 @@ fn app() -> Html {
             if let Some(image_data) = (*image_data).as_ref() {
                 match generate_gem_art(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm) {
                     Ok((data, counts)) => {
-                        generated_image_data_for_effect.set(Some(data));
+                                                                        generated_image_data_for_effect.set(Some(data));
                         gem_counts_for_effect.set(counts);
                     }
                     Err(_e) => {
