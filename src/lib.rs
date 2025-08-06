@@ -15,6 +15,12 @@ use std::collections::{HashSet, HashMap};
 mod dmc_colors;
 
 #[derive(Clone, PartialEq)]
+enum ImageFitOption {
+    Fit,
+    Crop,
+}
+
+#[derive(Clone, PartialEq)]
 struct GemCount {
     floss: String,
     count: u32,
@@ -32,7 +38,7 @@ fn to_excel_column(num: usize) -> String {
     s
 }
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32) -> Result<(String, Vec<GemCount>), String> {
+fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption) -> Result<(String, Vec<GemCount>), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
@@ -57,25 +63,57 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32) -> Re
     let printable_width_px = a4_width_px - (2 * margin_px);
     let printable_height_px = a4_height_px - (2 * margin_px);
 
-    let aspect_ratio = img_width as f32 / img_height as f32;
+    let img_aspect_ratio = img_width as f32 / img_height as f32;
+    let printable_aspect_ratio = printable_width_px as f32 / printable_height_px as f32;
 
-    let (new_width_px, new_height_px) = if (printable_width_px as f32) / aspect_ratio <= printable_height_px as f32 {
-        (printable_width_px, (printable_width_px as f32 / aspect_ratio).round() as u32)
-    } else {
-        ((printable_height_px as f32 * aspect_ratio).round() as u32, printable_height_px)
-    };
+    let (mut final_img_width_px, mut final_img_height_px) = (0, 0);
+    let mut processed_img = img;
+
+    match fit_option {
+        ImageFitOption::Fit => {
+            if img_aspect_ratio > printable_aspect_ratio {
+                // Image is wider, fit by width
+                final_img_width_px = printable_width_px;
+                final_img_height_px = (printable_width_px as f32 / img_aspect_ratio).round() as u32;
+            } else {
+                // Image is taller or same aspect, fit by height
+                final_img_height_px = printable_height_px;
+                final_img_width_px = (printable_height_px as f32 * img_aspect_ratio).round() as u32;
+            }
+            processed_img = processed_img.resize_exact(final_img_width_px, final_img_height_px, FilterType::Nearest);
+        },
+        ImageFitOption::Crop => {
+            if img_aspect_ratio > printable_aspect_ratio {
+                // Image is wider, scale height to fill and crop width
+                let scaled_height = printable_height_px;
+                let scaled_width = (printable_height_px as f32 * img_aspect_ratio).round() as u32;
+                processed_img = processed_img.resize_exact(scaled_width, scaled_height, FilterType::Nearest);
+
+                let crop_x = (scaled_width - printable_width_px) / 2;
+                processed_img = processed_img.crop_imm(crop_x, 0, printable_width_px, printable_height_px);
+            } else {
+                // Image is taller, scale width to fill and crop height
+                let scaled_width = printable_width_px;
+                let scaled_height = (printable_width_px as f32 / img_aspect_ratio).round() as u32;
+                processed_img = processed_img.resize_exact(scaled_width, scaled_height, FilterType::Nearest);
+
+                let crop_y = (scaled_height - printable_height_px) / 2;
+                processed_img = processed_img.crop_imm(0, crop_y, printable_width_px, printable_height_px);
+            }
+            final_img_width_px = printable_width_px;
+            final_img_height_px = printable_height_px;
+        }
+    }
 
     let gem_size_px = (gem_size_mm * pixels_per_mm).round() as u32;
-    let num_gems_x = new_width_px / gem_size_px;
-    let num_gems_y = new_height_px / gem_size_px;
-
-    
+    let num_gems_x = final_img_width_px / gem_size_px;
+    let num_gems_y = final_img_height_px / gem_size_px;
 
     if num_gems_x == 0 || num_gems_y == 0 {
         return Err("Image dimensions are too small to generate gem art.".to_string());
     }
 
-    let resized_img = img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
+    let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
     let gem_colors: Vec<Lab> = colors
         .iter()
@@ -286,6 +324,7 @@ fn app() -> Html {
     let sort_by_number = use_state(|| false);
     let is_settings_open = use_state(|| false);
     let margin_mm = use_state(|| 30.0);
+    let image_fit_option = use_state(|| ImageFitOption::Fit);
 
     let on_sort_by_color_click = {
         let sort_by_number = sort_by_number.clone();
@@ -382,7 +421,7 @@ fn app() -> Html {
     let gem_counts_for_effect = gem_counts.clone();
     let dmc_colors_for_effect = dmc_colors.clone();
     use_effect_with_deps(
-        move |(image_data, selected_dmc_colors, margin_mm)| {
+        move |(image_data, selected_dmc_colors, margin_mm, image_fit_option)| {
             let current_dmc_colors = dmc_colors_for_effect.clone();
             let colors_for_generation: Vec<Color> = selected_dmc_colors
                 .iter()
@@ -406,7 +445,7 @@ fn app() -> Html {
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, &colors_for_generation, **margin_mm) {
+                match generate_gem_art(image_data, &colors_for_generation, **margin_mm, image_fit_option) {
                     Ok((data, counts)) => {
                         generated_image_data_for_effect.set(Some(data));
                         gem_counts_for_effect.set(counts);
@@ -417,7 +456,7 @@ fn app() -> Html {
                 }
             }
         },
-        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone()),
+        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone(), image_fit_option.clone()),
     );
 
     let download = {
@@ -491,6 +530,25 @@ fn app() -> Html {
                                     let input: HtmlInputElement = e.target_unchecked_into();
                                     margin_mm.set(input.value().parse().unwrap_or(30.0));
                                 })} min="0" />
+                            </div>
+                            <div class="setting">
+                                <label>{ "Image Fit" }</label>
+                                <div class="radio-group">
+                                    <input type="radio" id="fit_entire" name="image_fit" value="fit" checked={*image_fit_option == ImageFitOption::Fit} onchange={{
+                                        let image_fit_option = image_fit_option.clone();
+                                        Callback::from(move |_| {
+                                            image_fit_option.set(ImageFitOption::Fit)
+                                        })
+                                    }} />
+                                    <label for="fit_entire">{ "Fit entire image into frame" }</label>
+                                    <input type="radio" id="crop_to_fit" name="image_fit" value="crop" checked={*image_fit_option == ImageFitOption::Crop} onchange={{
+                                        let image_fit_option = image_fit_option.clone();
+                                        Callback::from(move |_| {
+                                            image_fit_option.set(ImageFitOption::Crop)
+                                        })
+                                    }} />
+                                    <label for="crop_to_fit">{ "Crop image to fit frame" }</label>
+                                </div>
                             </div>
                         </div>
                     }
