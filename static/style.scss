@@ -339,29 +339,6 @@ canvas {
     }
 }
 
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-
-    .container {
-        padding: 20px;
-    }
-
-    h1 {
-        font-size: 2em;
-    }
-
-    button {
-        padding: 10px 20px;
-        font-size: 1em;
-    }
-
-    .colours {
-        max-height: 40vh;
-    }
-}
-
 .help-icon {
     display: inline-flex;
     justify-content: center;
@@ -413,4 +390,32 @@ canvas {
 .help-modal li {
     margin-bottom: 5px;
     font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 1em;
+    }
+
+    .colours {
+        max-height: 40vh;
+    }
+
+    .help-modal {
+        left: calc(100% + 10px); // Position to the right of the parent, plus margin
+        transform: translateY(1em) translateX(-100%); // Adjust for vertical centering
+    }
 }
