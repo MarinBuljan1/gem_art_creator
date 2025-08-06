@@ -6,6 +6,7 @@ description = "A simple Yew-based flashcard app"
 
 [dependencies]
 console_log = "0.2"
+gloo-console = "0.2"
 gloo-events = "0.2"
 gloo-net = "0.2"
 gloo-storage = "0.2"

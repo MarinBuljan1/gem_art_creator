@@ -32,14 +32,13 @@ fn to_excel_column(num: usize) -> String {
     s
 }
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Vec<GemCount>), String> {
+fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32) -> Result<(String, Vec<GemCount>), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
 
     let mut a4_width_mm = 210.0;
     let mut a4_height_mm = 297.0;
-    let margin_mm = 30.0;
     let gem_size_mm = 2.7;
     let dpi = 300.0;
     let mm_per_inch = 25.4;
@@ -55,19 +54,26 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>) -> Result<(String, Ve
     let a4_height_px = ((a4_height_mm * pixels_per_mm) as f32).round() as u32;
     let margin_px = ((margin_mm * pixels_per_mm) as f32).round() as u32;
 
-    let printable_width_mm = a4_width_mm - (2.0 * margin_mm);
-    let printable_height_mm = a4_height_mm - (2.0 * margin_mm);
+    let printable_width_px = a4_width_px - (2 * margin_px);
+    let printable_height_px = a4_height_px - (2 * margin_px);
 
     let aspect_ratio = img_width as f32 / img_height as f32;
 
-    let (new_width_mm, new_height_mm) = if printable_width_mm / aspect_ratio <= printable_height_mm {
-        (printable_width_mm, printable_width_mm / aspect_ratio)
+    let (new_width_px, new_height_px) = if (printable_width_px as f32) / aspect_ratio <= printable_height_px as f32 {
+        (printable_width_px, (printable_width_px as f32 / aspect_ratio).round() as u32)
     } else {
-        (printable_height_mm * aspect_ratio, printable_height_mm)
+        ((printable_height_px as f32 * aspect_ratio).round() as u32, printable_height_px)
     };
 
-    let num_gems_x = (new_width_mm / gem_size_mm).floor() as u32;
-    let num_gems_y = (new_height_mm / gem_size_mm).floor() as u32;
+    let gem_size_px = (gem_size_mm * pixels_per_mm).round() as u32;
+    let num_gems_x = new_width_px / gem_size_px;
+    let num_gems_y = new_height_px / gem_size_px;
+
+    
+
+    if num_gems_x == 0 || num_gems_y == 0 {
+        return Err("Image dimensions are too small to generate gem art.".to_string());
+    }
 
     let resized_img = img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
@@ -279,6 +285,7 @@ fn app() -> Html {
     });
     let sort_by_number = use_state(|| false);
     let is_settings_open = use_state(|| false);
+    let margin_mm = use_state(|| 30.0);
 
     let on_sort_by_color_click = {
         let sort_by_number = sort_by_number.clone();
@@ -375,7 +382,7 @@ fn app() -> Html {
     let gem_counts_for_effect = gem_counts.clone();
     let dmc_colors_for_effect = dmc_colors.clone();
     use_effect_with_deps(
-        move |(image_data, selected_dmc_colors)| {
+        move |(image_data, selected_dmc_colors, margin_mm)| {
             let current_dmc_colors = dmc_colors_for_effect.clone();
             let colors_for_generation: Vec<Color> = selected_dmc_colors
                 .iter()
@@ -399,7 +406,7 @@ fn app() -> Html {
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, &colors_for_generation) {
+                match generate_gem_art(image_data, &colors_for_generation, **margin_mm) {
                     Ok((data, counts)) => {
                         generated_image_data_for_effect.set(Some(data));
                         gem_counts_for_effect.set(counts);
@@ -410,7 +417,7 @@ fn app() -> Html {
                 }
             }
         },
-        (image_data.clone(), selected_dmc_colors.clone()),
+        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone()),
     );
 
     let download = {
@@ -478,7 +485,13 @@ fn app() -> Html {
                 { if *is_settings_open {
                     html! {
                         <div class="section settings">
-                            <p>{ "Settings" }</p>
+                            <div class="setting">
+                                <label for="margin_mm">{ "Margin (mm)" }</label>
+                                <input type="number" id="margin_mm" value={margin_mm.to_string()} onchange={Callback::from(move |e: Event| {
+                                    let input: HtmlInputElement = e.target_unchecked_into();
+                                    margin_mm.set(input.value().parse().unwrap_or(30.0));
+                                })} min="0" />
+                            </div>
                         </div>
                     }
                 } else {

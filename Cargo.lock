@@ -1756,6 +1756,7 @@ dependencies = [
  "console_log",
  "csv",
  "deltae",
+ "gloo-console",
  "gloo-dialogs",
  "gloo-events 0.2.0",
  "gloo-file 0.3.0",
