@@ -333,6 +333,7 @@ fn app() -> Html {
     let margin_mm = use_state(|| 30.0);
     let custom_width_mm = use_state(|| Some(210.0));
     let custom_height_mm = use_state(|| Some(297.0));
+    let is_help_modal_open = use_state(|| false);
     let image_fit_option = use_state(|| ImageFitOption::Fit);
 
     let on_sort_by_color_click = {
@@ -346,6 +347,27 @@ fn app() -> Html {
         let is_settings_open = is_settings_open.clone();
         Callback::from(move |_| {
             is_settings_open.set(!*is_settings_open);
+        })
+    };
+
+    let on_help_icon_mouseover = {
+        let is_help_modal_open = is_help_modal_open.clone();
+        Callback::from(move |_| {
+            is_help_modal_open.set(true);
+        })
+    };
+
+    let on_help_icon_mouseout = {
+        let is_help_modal_open = is_help_modal_open.clone();
+        Callback::from(move |_| {
+            is_help_modal_open.set(false);
+        })
+    };
+
+    let on_help_icon_click = {
+        let is_help_modal_open = is_help_modal_open.clone();
+        Callback::from(move |_| {
+            is_help_modal_open.set(!*is_help_modal_open);
         })
     };
 
@@ -534,23 +556,46 @@ fn app() -> Html {
                     html! {
                         <div class="section settings">
                             <div class="setting">
-                                <label for="margin_mm">{ "Margin (mm) " }</label>
+                                <label for="margin_mm">{ "Margin (mm)" }</label>
                                 <input type="number" id="margin_mm" value={margin_mm.to_string()} onchange={Callback::from(move |e: Event| {
                                     let input: HtmlInputElement = e.target_unchecked_into();
                                     margin_mm.set(input.value().parse().unwrap_or(30.0));
                                 })} min="0" />
                             </div>
                             <div class="setting">
-                                <label>{ "Page Sizing: " }</label>
-                                <input type="number" id="custom_width_mm" value={custom_width_mm.as_ref().map_or("".to_string(), |w| w.to_string())} onchange={Callback::from(move |e: Event| {
-                                    let input: HtmlInputElement = e.target_unchecked_into();
-                                    custom_width_mm.set(input.value().parse().ok());
-                                })} min="0" />
-                                <label>{ " x " }</label>
-                                <input type="number" id="custom_height_mm" value={custom_height_mm.as_ref().map_or("".to_string(), |h| h.to_string())} onchange={Callback::from(move |e: Event| {
-                                    let input: HtmlInputElement = e.target_unchecked_into();
-                                    custom_height_mm.set(input.value().parse().ok());
-                                })} min="0" />
+                                <div class="page-sizing-input-group">
+                                    <label>{ "Page Sizing:" }</label>
+                                    <input type="number" id="custom_width_mm" value={custom_width_mm.as_ref().map_or("".to_string(), |w| w.to_string())} onchange={Callback::from(move |e: Event| {
+                                        let input: HtmlInputElement = e.target_unchecked_into();
+                                        custom_width_mm.set(input.value().parse().ok());
+                                    })} min="0" />
+                                    <label>{ "x" }</label>
+                                    <input type="number" id="custom_height_mm" value={custom_height_mm.as_ref().map_or("".to_string(), |h| h.to_string())} onchange={Callback::from(move |e: Event| {
+                                        let input: HtmlInputElement = e.target_unchecked_into();
+                                        custom_height_mm.set(input.value().parse().ok());
+                                    })} min="0" />
+                                    <span class="help-icon" onmouseover={on_help_icon_mouseover} onmouseout={on_help_icon_mouseout} onclick={on_help_icon_click}>{ "?" }</span>
+                                    { if *is_help_modal_open {
+                                        html! {
+                                            <div class="help-modal">
+                                                <h3>{ "Standard Paper Sizes" }</h3>
+                                                <ul>
+                                                    <li>{ "A0: 841 x 1189 mm" }</li>
+                                                    <li>{ "A1: 594 x 841 mm" }</li>
+                                                    <li>{ "A2: 420 x 594 mm" }</li>
+                                                    <li>{ "A3: 297 x 420 mm" }</li>
+                                                    <li>{ "A4: 210 x 297 mm" }</li>
+                                                    <li>{ "A5: 148 x 210 mm" }</li>
+                                                    <li>{ "Letter: 215.9 x 279.4 mm" }</li>
+                                                    <li>{ "Legal: 215.9 x 355.6 mm" }</li>
+                                                    <li>{ "Tabloid: 279.4 x 431.8 mm" }</li>
+                                                </ul>
+                                            </div>
+                                        }
+                                    } else {
+                                        html! {}
+                                    } }
+                                </div>
                             </div>
                             <div class="setting">
                                 <label>{ "Image Fit" }</label>

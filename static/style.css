@@ -305,6 +305,16 @@ canvas {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0);
 }
 
+.settings input[type=number] {
+  width: 6em;
+}
+.settings .setting {
+  margin: 0.5em 0;
+}
+.settings .setting label {
+  padding: 0 0.4em;
+}
+
 @media (max-width: 768px) {
   body {
     padding: 10px;
@@ -322,6 +332,58 @@ canvas {
   .colours {
     max-height: 40vh;
   }
+}
+.help-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #4cacaf;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px;
+  font-size: 0.8em;
+}
+
+.page-sizing-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+}
+
+.help-modal {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-1em);
+  white-space: nowrap;
+}
+
+.help-modal h3 {
+  margin-top: 0;
+  font-size: 1em;
+  color: #4cacaf;
+}
+
+.help-modal ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.help-modal li {
+  margin-bottom: 5px;
+  font-size: 0.9em;
 }
 
 /*# sourceMappingURL=style.css.map */
