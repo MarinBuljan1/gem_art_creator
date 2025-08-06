@@ -66,7 +66,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_o
     let img_aspect_ratio = img_width as f32 / img_height as f32;
     let printable_aspect_ratio = printable_width_px as f32 / printable_height_px as f32;
 
-    let (mut final_img_width_px, mut final_img_height_px) = (0, 0);
+    let (final_img_width_px, final_img_height_px);
     let mut processed_img = img;
 
     match fit_option {
@@ -525,7 +525,7 @@ fn app() -> Html {
                     html! {
                         <div class="section settings">
                             <div class="setting">
-                                <label for="margin_mm">{ "Margin (mm)" }</label>
+                                <label for="margin_mm">{ "Margin (mm) " }</label>
                                 <input type="number" id="margin_mm" value={margin_mm.to_string()} onchange={Callback::from(move |e: Event| {
                                     let input: HtmlInputElement = e.target_unchecked_into();
                                     margin_mm.set(input.value().parse().unwrap_or(30.0));
@@ -534,20 +534,24 @@ fn app() -> Html {
                             <div class="setting">
                                 <label>{ "Image Fit" }</label>
                                 <div class="radio-group">
-                                    <input type="radio" id="fit_entire" name="image_fit" value="fit" checked={*image_fit_option == ImageFitOption::Fit} onchange={{
-                                        let image_fit_option = image_fit_option.clone();
-                                        Callback::from(move |_| {
-                                            image_fit_option.set(ImageFitOption::Fit)
-                                        })
-                                    }} />
-                                    <label for="fit_entire">{ "Fit entire image into frame" }</label>
-                                    <input type="radio" id="crop_to_fit" name="image_fit" value="crop" checked={*image_fit_option == ImageFitOption::Crop} onchange={{
-                                        let image_fit_option = image_fit_option.clone();
-                                        Callback::from(move |_| {
-                                            image_fit_option.set(ImageFitOption::Crop)
-                                        })
-                                    }} />
-                                    <label for="crop_to_fit">{ "Crop image to fit frame" }</label>
+                                    <div>
+                                        <input type="radio" id="fit_entire" name="image_fit" value="fit" checked={*image_fit_option == ImageFitOption::Fit} onchange={{
+                                            let image_fit_option = image_fit_option.clone();
+                                            Callback::from(move |_| {
+                                                image_fit_option.set(ImageFitOption::Fit)
+                                            })
+                                        }} />
+                                        <label for="fit_entire">{ "Fit entire image into frame" }</label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" id="crop_to_fit" name="image_fit" value="crop" checked={*image_fit_option == ImageFitOption::Crop} onchange={{
+                                            let image_fit_option = image_fit_option.clone();
+                                            Callback::from(move |_| {
+                                                image_fit_option.set(ImageFitOption::Crop)
+                                            })
+                                        }} />
+                                        <label for="crop_to_fit">{ "Crop image to fit frame" }</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
