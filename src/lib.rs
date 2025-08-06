@@ -38,13 +38,13 @@ fn to_excel_column(num: usize) -> String {
     s
 }
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption) -> Result<(String, Vec<GemCount>), String> {
+fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
 
-    let mut a4_width_mm = 210.0;
-    let mut a4_height_mm = 297.0;
+    let mut canvas_width_mm = custom_width_mm.unwrap_or(210.0);
+    let mut canvas_height_mm = custom_height_mm.unwrap_or(297.0);
     let gem_size_mm = 2.7;
     let dpi = 300.0;
     let mm_per_inch = 25.4;
@@ -52,12 +52,19 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_o
 
     let (img_width, img_height) = img.dimensions();
 
-    if img_width > img_height {
-        std::mem::swap(&mut a4_width_mm, &mut a4_height_mm);
+    // Determine image orientation
+    let is_image_landscape = img_width > img_height;
+
+    // Determine initial canvas orientation (before potential swap)
+    let is_canvas_landscape = canvas_width_mm > canvas_height_mm;
+
+    // If orientations don't match, swap canvas dimensions to match image orientation
+    if is_image_landscape != is_canvas_landscape {
+        std::mem::swap(&mut canvas_width_mm, &mut canvas_height_mm);
     }
 
-    let a4_width_px = ((a4_width_mm * pixels_per_mm) as f32).round() as u32;
-    let a4_height_px = ((a4_height_mm * pixels_per_mm) as f32).round() as u32;
+    let a4_width_px = ((canvas_width_mm * pixels_per_mm) as f32).round() as u32;
+    let a4_height_px = ((canvas_height_mm * pixels_per_mm) as f32).round() as u32;
     let margin_px = ((margin_mm * pixels_per_mm) as f32).round() as u32;
 
     let printable_width_px = a4_width_px - (2 * margin_px);
@@ -324,6 +331,8 @@ fn app() -> Html {
     let sort_by_number = use_state(|| false);
     let is_settings_open = use_state(|| false);
     let margin_mm = use_state(|| 30.0);
+    let custom_width_mm = use_state(|| Some(210.0));
+    let custom_height_mm = use_state(|| Some(297.0));
     let image_fit_option = use_state(|| ImageFitOption::Fit);
 
     let on_sort_by_color_click = {
@@ -421,7 +430,7 @@ fn app() -> Html {
     let gem_counts_for_effect = gem_counts.clone();
     let dmc_colors_for_effect = dmc_colors.clone();
     use_effect_with_deps(
-        move |(image_data, selected_dmc_colors, margin_mm, image_fit_option)| {
+        move |(image_data, selected_dmc_colors, margin_mm, image_fit_option, custom_width_mm, custom_height_mm)| {
             let current_dmc_colors = dmc_colors_for_effect.clone();
             let colors_for_generation: Vec<Color> = selected_dmc_colors
                 .iter()
@@ -445,7 +454,7 @@ fn app() -> Html {
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, &colors_for_generation, **margin_mm, image_fit_option) {
+                match generate_gem_art(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm) {
                     Ok((data, counts)) => {
                         generated_image_data_for_effect.set(Some(data));
                         gem_counts_for_effect.set(counts);
@@ -456,7 +465,7 @@ fn app() -> Html {
                 }
             }
         },
-        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone(), image_fit_option.clone()),
+        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone(), image_fit_option.clone(), custom_width_mm.clone(), custom_height_mm.clone()),
     );
 
     let download = {
@@ -529,6 +538,18 @@ fn app() -> Html {
                                 <input type="number" id="margin_mm" value={margin_mm.to_string()} onchange={Callback::from(move |e: Event| {
                                     let input: HtmlInputElement = e.target_unchecked_into();
                                     margin_mm.set(input.value().parse().unwrap_or(30.0));
+                                })} min="0" />
+                            </div>
+                            <div class="setting">
+                                <label>{ "Page Sizing: " }</label>
+                                <input type="number" id="custom_width_mm" value={custom_width_mm.as_ref().map_or("".to_string(), |w| w.to_string())} onchange={Callback::from(move |e: Event| {
+                                    let input: HtmlInputElement = e.target_unchecked_into();
+                                    custom_width_mm.set(input.value().parse().ok());
+                                })} min="0" />
+                                <label>{ " x " }</label>
+                                <input type="number" id="custom_height_mm" value={custom_height_mm.as_ref().map_or("".to_string(), |h| h.to_string())} onchange={Callback::from(move |e: Event| {
+                                    let input: HtmlInputElement = e.target_unchecked_into();
+                                    custom_height_mm.set(input.value().parse().ok());
                                 })} min="0" />
                             </div>
                             <div class="setting">
