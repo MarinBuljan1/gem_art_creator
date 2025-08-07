@@ -33,3 +33,10 @@ yew = { version = "0.20", features = ["csr"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "my_benchmark"
+harness = false
