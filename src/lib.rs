@@ -12,22 +12,22 @@ use imageproc::drawing::{draw_hollow_circle_mut, draw_text_mut, draw_filled_circ
 use rusttype::{Font, Scale};
 use std::collections::{HashSet, HashMap};
 
-mod dmc_colors;
+pub mod dmc_colors;
 
 #[derive(Clone, PartialEq)]
-enum ImageFitOption {
+pub enum ImageFitOption {
     Fit,
     Crop,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-struct GemCount {
-    floss: String,
-    count: u32,
-    hex: String,
+pub struct GemCount {
+    pub floss: String,
+    pub count: u32,
+    pub hex: String,
 }
 
-fn to_excel_column(num: usize) -> String {
+pub fn to_excel_column(num: usize) -> String {
     let mut s = String::new();
     let mut n = num;
     while n > 0 {
@@ -38,7 +38,7 @@ fn to_excel_column(num: usize) -> String {
     s
 }
 
-fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
+pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
@@ -66,6 +66,10 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_o
     let a4_width_px = ((canvas_width_mm * pixels_per_mm) as f32).round() as u32;
     let a4_height_px = ((canvas_height_mm * pixels_per_mm) as f32).round() as u32;
     let margin_px = ((margin_mm * pixels_per_mm) as f32).round() as u32;
+
+    if 2 * margin_px >= a4_width_px || 2 * margin_px >= a4_height_px {
+        return Err("Image dimensions are too small to generate gem art due to large margins.".to_string());
+    }
 
     let printable_width_px = a4_width_px - (2 * margin_px);
     let printable_height_px = a4_height_px - (2 * margin_px);
@@ -248,7 +252,7 @@ fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_o
 
 
 
-fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String> {
+pub fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String> {
     let a4_width_mm = 210.0;
     let a4_height_mm = 297.0;
     let margin_mm = 10.0;
@@ -311,15 +315,13 @@ fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String> {
 }
 
 #[derive(Clone, PartialEq, Default)]
-struct Color {
-    // id: usize, // Removed
-    value: String, // This will store the hex color string
-    floss_number: String,
-    // Add RGB components for direct use in generate_gem_art
-    r: u8,
-    g: u8,
-    b: u8,
-    hex: String,
+pub struct Color {
+    pub value: String, // This will store the hex color string
+    pub floss_number: String,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub hex: String,
 }
 
 #[function_component(App)]
