@@ -223,6 +223,7 @@ canvas {
 
 .text-output-container {
   width: calc(100% - 22px);
+  min-height: 30px;
   max-height: 150px;
   border: 1px solid #ddd;
   border-radius: 8px;

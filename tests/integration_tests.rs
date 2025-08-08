@@ -1,11 +1,6 @@
-use yew_project::{
-    generate_gem_art,
-    generate_text_image,
-    to_excel_column,
-    ImageFitOption,
-    GemCount,
-    Color,
-};
+use yew_project::image_processing::{generate_gem_art, generate_text_image};
+use yew_project::utils::to_excel_column;
+use yew_project::models::{ImageFitOption, GemCount, Color};
 use std::time::Instant;
 use base64::Engine;
 use image::{DynamicImage, Rgba, GenericImage};
@@ -196,8 +191,8 @@ fn test_generate_gem_art_fit_option() {
         std::mem::swap(&mut canvas_width_mm_s1, &mut canvas_height_mm_s1);
     }
 
-    let a4_width_px_s1 = (canvas_width_mm_s1 * pixels_per_mm).round() as u32;
-    let a4_height_px_s1 = (canvas_height_mm_s1 * pixels_per_mm).round() as u32;
+    let a4_width_px_s1 = (canvas_width_mm_s1 * pixels_per_mm as f32).round() as u32;
+    let a4_height_px_s1 = (canvas_height_mm_s1 * pixels_per_mm as f32).round() as u32;
 
     assert_eq!(generated_img.width(), a4_width_px_s1, "Landscape image final canvas width mismatch");
     assert_eq!(generated_img.height(), a4_height_px_s1, "Landscape image final canvas height mismatch");
@@ -237,8 +232,8 @@ fn test_generate_gem_art_fit_option() {
         std::mem::swap(&mut canvas_width_mm_s2, &mut canvas_height_mm_s2);
     }
 
-    let a4_width_px_s2 = (canvas_width_mm_s2 * pixels_per_mm).round() as u32;
-    let a4_height_px_s2 = (canvas_height_mm_s2 * pixels_per_mm).round() as u32;
+    let a4_width_px_s2 = (canvas_width_mm_s2 * pixels_per_mm as f32).round() as u32;
+    let a4_height_px_s2 = (canvas_height_mm_s2 * pixels_per_mm as f32).round() as u32;
 
     assert_eq!(generated_img.width(), a4_width_px_s2, "Portrait image final canvas width mismatch");
     assert_eq!(generated_img.height(), a4_height_px_s2, "Portrait image final canvas height mismatch");
@@ -290,8 +285,8 @@ fn test_generate_gem_art_crop_option() {
         std::mem::swap(&mut canvas_width_mm_s1, &mut canvas_height_mm_s1);
     }
 
-    let a4_width_px_s1 = (canvas_width_mm_s1 * pixels_per_mm).round() as u32;
-    let a4_height_px_s1 = (canvas_height_mm_s1 * pixels_per_mm).round() as u32;
+    let a4_width_px_s1 = (canvas_width_mm_s1 * pixels_per_mm as f32).round() as u32;
+    let a4_height_px_s1 = (canvas_height_mm_s1 * pixels_per_mm as f32).round() as u32;
 
     assert_eq!(generated_img.width(), a4_width_px_s1, "Landscape image crop width mismatch");
     assert_eq!(generated_img.height(), a4_height_px_s1, "Landscape image crop height mismatch");
@@ -331,8 +326,8 @@ fn test_generate_gem_art_crop_option() {
         std::mem::swap(&mut canvas_width_mm_s2, &mut canvas_height_mm_s2);
     }
 
-    let a4_width_px_s2 = (canvas_width_mm_s2 * pixels_per_mm).round() as u32;
-    let a4_height_px_s2 = (canvas_height_mm_s2 * pixels_per_mm).round() as u32;
+    let a4_width_px_s2 = (canvas_width_mm_s2 * pixels_per_mm as f32).round() as u32;
+    let a4_height_px_s2 = (canvas_height_mm_s2 * pixels_per_mm as f32).round() as u32;
 
     assert_eq!(generated_img.width(), a4_width_px_s2, "Portrait image crop width mismatch");
     assert_eq!(generated_img.height(), a4_height_px_s2, "Portrait image crop height mismatch");
@@ -370,10 +365,10 @@ fn test_generate_gem_art_margin_application() {
         custom_height_mm,
     ).unwrap();
 
-    let canvas_width_px_0 = (custom_width_mm.unwrap() * pixels_per_mm).round() as u32;
-    let canvas_height_px_0 = (custom_height_mm.unwrap() * pixels_per_mm).round() as u32;
-    let printable_width_px_0 = canvas_width_px_0 - (2 * (margin_mm_0 * pixels_per_mm).round() as u32);
-    let printable_height_px_0 = canvas_height_px_0 - (2 * (margin_mm_0 * pixels_per_mm).round() as u32);
+    let canvas_width_px_0 = (custom_width_mm.unwrap() * pixels_per_mm as f32).round() as u32;
+    let canvas_height_px_0 = (custom_height_mm.unwrap() * pixels_per_mm as f32).round() as u32;
+    let printable_width_px_0 = canvas_width_px_0 - (2 * (margin_mm_0 * pixels_per_mm as f32).round() as u32);
+    let printable_height_px_0 = canvas_height_px_0 - (2 * (margin_mm_0 * pixels_per_mm as f32).round() as u32);
     let expected_num_gems_x_0 = printable_width_px_0 / gem_size_px;
     let expected_num_gems_y_0 = printable_height_px_0 / gem_size_px;
     assert_eq!(gem_counts_0[0].count, expected_num_gems_x_0 * expected_num_gems_y_0, "0mm margin: Total gem count mismatch");
@@ -389,9 +384,9 @@ fn test_generate_gem_art_margin_application() {
         custom_height_mm,
     ).unwrap();
 
-    let canvas_width_px_10 = (custom_width_mm.unwrap() * pixels_per_mm).round() as u32;
-    let canvas_height_px_10 = (custom_height_mm.unwrap() * pixels_per_mm).round() as u32;
-    let margin_px_10 = (margin_mm_10 * pixels_per_mm).round() as u32;
+    let canvas_width_px_10 = (custom_width_mm.unwrap() * pixels_per_mm as f32).round() as u32;
+    let canvas_height_px_10 = (custom_height_mm.unwrap() * pixels_per_mm as f32).round() as u32;
+    let margin_px_10 = (margin_mm_10 * pixels_per_mm as f32).round() as u32;
     let printable_width_px_10 = canvas_width_px_10 - (2 * margin_px_10);
     let printable_height_px_10 = canvas_height_px_10 - (2 * margin_px_10);
     let expected_num_gems_x_10 = printable_width_px_10 / gem_size_px;
@@ -477,8 +472,8 @@ fn test_generate_text_image_column_layout() {
     let mm_per_inch = 25.4;
     let pixels_per_mm = dpi / mm_per_inch;
 
-    let expected_width_px = (a4_width_mm as f32 * pixels_per_mm).round() as u32;
-    let expected_height_px = (a4_height_mm as f32 * pixels_per_mm).round() as u32;
+    let expected_width_px = (a4_width_mm as f32 * pixels_per_mm as f32).round() as u32;
+    let expected_height_px = (a4_height_mm as f32 * pixels_per_mm as f32).round() as u32;
 
     assert!((generated_img.width() as f32 - expected_width_px as f32).abs() < 2.0, "Generated text image width mismatch");
     assert!((generated_img.height() as f32 - expected_height_px as f32).abs() < 2.0, "Generated text image height mismatch");
