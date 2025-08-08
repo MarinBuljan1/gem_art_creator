@@ -30,6 +30,7 @@ base64 = "0.21"
 deltae = "0.2.1"
 palette = "0.7.3"
 yew = { version = "0.20", features = ["csr"] }
+kiddo = { version = "0.1.3", features = ["serialize"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

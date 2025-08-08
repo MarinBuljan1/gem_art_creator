@@ -1,0 +1,96 @@
+panicked at src\image_processing.rs:30:94:
+Failed to initialize DMC colors data: "Failed to read dmc_colors_precomputed.json: operation not supported on this platform"
+
+Stack:
+
+__wbg_get_imports/imports.wbg.__wbg_new_8a6f238a6ece86ea@http://localhost:3000/pkg/yew_project.js:504:21
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[2002]:0x1c754c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[947]:0x191786
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1611]:0x1be063
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1194]:0x1a2bdb
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[234]:0xc970a
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1567]:0x1bd4b0
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1019]:0x19591b
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1362]:0x1a8b86
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[622]:0x1658b6
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1716]:0x1bf1b9
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1715]:0x1bf1ab
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1766]:0x1c04b2
+__wbg_adapter_28@http://localhost:3000/pkg/yew_project.js:225:10
+real@http://localhost:3000/pkg/yew_project.js:132:20
+VoidFunction*__wbg_get_imports/imports.wbg.__wbg_queueMicrotask_98e746b9f850fe3d@http://localhost:3000/pkg/yew_project.js:531:23
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1998]:0x1c730c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1240]:0x1a4513
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1607]:0x1bdeef
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1049]:0x19bb31
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[2000]:0x1c731c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[706]:0x172990
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[768]:0x178595
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1496]:0x1b57ba
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1605]:0x1bde5c
+__wbg_adapter_31@http://localhost:3000/pkg/yew_project.js:229:10
+real@http://localhost:3000/pkg/yew_project.js:132:20
+EventListener.handleEvent*__wbg_get_imports/imports.wbg.__wbg_addEventListener_3108cb7b6270a31b/<@http://localhost:3000/pkg/yew_project.js:270:14
+handleError@http://localhost:3000/pkg/yew_project.js:29:18
+__wbg_get_imports/imports.wbg.__wbg_addEventListener_3108cb7b6270a31b@http://localhost:3000/pkg/yew_project.js:269:79
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1498]:0x1b581c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[292]:0xfe9a9
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1614]:0x1be119
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[221]:0xbe0a8
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1496]:0x1b57ba
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1605]:0x1bde5c
+__wbg_adapter_31@http://localhost:3000/pkg/yew_project.js:229:10
+real@http://localhost:3000/pkg/yew_project.js:132:20
+EventListener.handleEvent*__wbg_get_imports/imports.wbg.__wbg_addEventListener_3108cb7b6270a31b/<@http://localhost:3000/pkg/yew_project.js:270:14
+handleError@http://localhost:3000/pkg/yew_project.js:29:18
+__wbg_get_imports/imports.wbg.__wbg_addEventListener_3108cb7b6270a31b@http://localhost:3000/pkg/yew_project.js:269:79
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1498]:0x1b581c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[533]:0x15663f
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[559]:0x15b3dc
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[213]:0xb7a86
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[189]:0x9df6a
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[252]:0xf0d89
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[256]:0xf21da
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[440]:0x140527
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[189]:0x9e13c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[214]:0xbb5db
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[168]:0x90c16
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1362]:0x1a8b86
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[622]:0x1658b6
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1716]:0x1bf1b9
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1715]:0x1bf1ab
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1766]:0x1c04b2
+__wbg_adapter_28@http://localhost:3000/pkg/yew_project.js:225:10
+real@http://localhost:3000/pkg/yew_project.js:132:20
+VoidFunction*__wbg_get_imports/imports.wbg.__wbg_queueMicrotask_98e746b9f850fe3d@http://localhost:3000/pkg/yew_project.js:531:23
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1998]:0x1c730c
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1240]:0x1a4513
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[1607]:0x1bdeef
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[960]:0x192718
+@http://localhost:3000/pkg/yew_project_bg.wasm:wasm-function[2005]:0x1c7678
+__wbg_finalize_init@http://localhost:3000/pkg/yew_project.js:756:10
+__wbg_init@http://localhost:3000/pkg/yew_project.js:810:12
+async*@http://localhost:3000/index.html:35:9
+
+
+yew_project.js:336:21
+Uncaught RuntimeError: unreachable executed
+    __wbg_adapter_28 http://localhost:3000/pkg/yew_project.js:225
+    real http://localhost:3000/pkg/yew_project.js:132
+    __wbg_queueMicrotask_98e746b9f850fe3d http://localhost:3000/pkg/yew_project.js:531
+    __wbg_adapter_31 http://localhost:3000/pkg/yew_project.js:229
+    real http://localhost:3000/pkg/yew_project.js:132
+    __wbg_addEventListener_3108cb7b6270a31b http://localhost:3000/pkg/yew_project.js:270
+    handleError http://localhost:3000/pkg/yew_project.js:29
+    __wbg_addEventListener_3108cb7b6270a31b http://localhost:3000/pkg/yew_project.js:269
+    __wbg_adapter_31 http://localhost:3000/pkg/yew_project.js:229
+    real http://localhost:3000/pkg/yew_project.js:132
+    __wbg_addEventListener_3108cb7b6270a31b http://localhost:3000/pkg/yew_project.js:270
+    handleError http://localhost:3000/pkg/yew_project.js:29
+    __wbg_addEventListener_3108cb7b6270a31b http://localhost:3000/pkg/yew_project.js:269
+    __wbg_adapter_28 http://localhost:3000/pkg/yew_project.js:225
+    real http://localhost:3000/pkg/yew_project.js:132
+    __wbg_queueMicrotask_98e746b9f850fe3d http://localhost:3000/pkg/yew_project.js:531
+    __wbg_finalize_init http://localhost:3000/pkg/yew_project.js:756
+    __wbg_init http://localhost:3000/pkg/yew_project.js:810
+    async* http://localhost:3000/index.html:35

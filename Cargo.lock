@@ -898,6 +898,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "kiddo"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d9d9b46f84e6d21fda457c8d7a5ed0e50382355194a47f28a3747ce6b5351d4"
+dependencies = [
+ "num-traits",
+ "serde",
+ "serde_derive",
+]
+
+[[package]]
 name = "lebe"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1972,6 +1983,7 @@ dependencies = [
  "imageproc",
  "indexmap 2.9.0",
  "js-sys",
+ "kiddo",
  "log",
  "palette",
  "regex",

@@ -1,14 +1,49 @@
 use image::{GenericImageView, DynamicImage, Rgba, imageops::FilterType, GenericImage};
 use base64::{engine::general_purpose, Engine as _};
-use deltae::{DeltaE, LabValue, DE2000};
-use palette::{Srgb, Lab, IntoColor, FromColor};
+use palette::{Srgb, Lab, IntoColor};
 use imageproc::drawing::{draw_hollow_circle_mut, draw_text_mut, draw_filled_circle_mut};
 use rusttype::{Font, Scale};
 use std::collections::HashMap;
-use crate::models::{ImageFitOption, GemCount, Color};
+use std::sync::OnceLock;
+use kiddo::KdTree;
+use crate::models::{ImageFitOption, GemCount, Color, DmcColorPrecomputed};
 use crate::utils::to_excel_column;
 
-pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
+static DMC_COLORS_DATA: OnceLock<(Vec<DmcColorPrecomputed>, KdTree<f32, usize, 3>)> = OnceLock::new();
+
+fn init_dmc_colors_data() -> Result<(Vec<DmcColorPrecomputed>, KdTree<f32, usize, 3>), String> {
+    let file_content = include_str!("../src/dmc_colors_precomputed.json");
+    let precomputed_colors: Vec<DmcColorPrecomputed> = serde_json::from_str(file_content)
+        .map_err(|e| format!("Failed to parse dmc_colors_precomputed.json: {}", e))?;
+
+    let mut kdtree = KdTree::new();
+    for (i, color) in precomputed_colors.iter().enumerate() {
+        let _ = kdtree.add(&[color.lab_l, color.lab_a, color.lab_b], i);
+    }
+
+    Ok((precomputed_colors, kdtree))
+}
+
+pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
+    let (all_dmc_colors, _kdtree) = DMC_COLORS_DATA.get_or_init(|| init_dmc_colors_data().expect("Failed to initialize DMC colors data"));
+
+    // Filter precomputed colors based on selected_colors
+    let mut filtered_dmc_colors: Vec<DmcColorPrecomputed> = Vec::new();
+    let mut filtered_kdtree = KdTree::new();
+    let mut floss_to_index_map: HashMap<String, usize> = HashMap::new();
+
+    for (_i, selected_color) in selected_colors.iter().enumerate() {
+        if let Some(dmc_color) = all_dmc_colors.iter().find(|c| c.floss.trim() == selected_color.floss_number.trim()) {
+            let _ = filtered_kdtree.add(&[dmc_color.lab_l, dmc_color.lab_a, dmc_color.lab_b], filtered_dmc_colors.len());
+            floss_to_index_map.insert(dmc_color.floss.clone(), filtered_dmc_colors.len());
+            filtered_dmc_colors.push(dmc_color.clone());
+        }
+    }
+
+    if filtered_dmc_colors.is_empty() {
+        return Err("No DMC colors selected or found.".to_string());
+    }
+
     let base64_data = image_data.split(",").nth(1).ok_or("Invalid image data")?;
     let decoded_data = general_purpose::STANDARD.decode(base64_data).map_err(|e| e.to_string())?;
     let img = image::load_from_memory(&decoded_data).map_err(|e| e.to_string())?;
@@ -28,7 +63,7 @@ pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, f
     // Determine initial canvas orientation (before potential swap)
     let is_canvas_landscape = canvas_width_mm > canvas_height_mm;
 
-    // If orientations don't match, swap canvas dimensions to match image orientation
+    // If orientations don\'t match, swap canvas dimensions to match image orientation
     if is_image_landscape != is_canvas_landscape {
         std::mem::swap(&mut canvas_width_mm, &mut canvas_height_mm);
     }
@@ -96,14 +131,6 @@ pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, f
 
     let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
-    let gem_colors: Vec<Lab> = colors
-        .iter()
-        .map(|c| {
-            let srgb: Srgb<f32> = Srgb::new(c.r as f32 / 255.0, c.g as f32 / 255.0, c.b as f32 / 255.0);
-            srgb.into_linear().into_color()
-        })
-        .collect();
-
     let mut color_counts: HashMap<String, (u32, String)> = HashMap::new();
     let mut gem_grid = Vec::with_capacity((num_gems_x * num_gems_y) as usize);
 
@@ -113,24 +140,11 @@ pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, f
             let srgb_pixel = Srgb::new(pixel[0] as f32 / 255.0, pixel[1] as f32 / 255.0, pixel[2] as f32 / 255.0);
             let lab_pixel: Lab = srgb_pixel.into_color();
 
-            let mut closest_color_index = 0;
-            let mut min_distance = f32::MAX;
-
-            for (i, color) in gem_colors.iter().enumerate() {
-                let distance = DeltaE::new(
-                    LabValue::new(lab_pixel.l, lab_pixel.a, lab_pixel.b).unwrap(),
-                    LabValue::new(color.l, color.a, color.b).unwrap(),
-                    DE2000,
-                )
-                .value;
-                if distance < min_distance {
-                    min_distance = distance;
-                    closest_color_index = i;
-                }
-            }
+            let nearest_neighbor = filtered_kdtree.nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean).unwrap();
+            let closest_color_index = *nearest_neighbor.1;
             
-            let color_info = &colors[closest_color_index];
-            let entry = color_counts.entry(color_info.floss_number.clone()).or_insert((0, color_info.hex.clone()));
+            let color_info = &filtered_dmc_colors[closest_color_index];
+            let entry = color_counts.entry(color_info.floss.clone()).or_insert((0, color_info.hex.clone()));
             entry.0 += 1;
             gem_grid.push(closest_color_index);
         }
@@ -150,16 +164,13 @@ pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, f
     let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
     let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
     let font_data = include_bytes!("../static/DejaVuSans.ttf");
-    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
 
     for gx in 0..num_gems_x {
         for gy in 0..num_gems_y {
             let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
-            let color_info = &colors[closest_color_index];
-            let closest_color = &gem_colors[closest_color_index];
-            let srgb_color: Srgb<u8> = Srgb::from_color(*closest_color).into_format();
-            let (r, g, b) = srgb_color.into_components();
-            let gem_rgba = Rgba([r, g, b, 255]);
+            let color_info = &filtered_dmc_colors[closest_color_index];
+            let gem_rgba = Rgba([color_info.r, color_info.g, color_info.b, 255]);
 
             for px in 0..gem_pixels_on_final_image {
                 for py in 0..gem_pixels_on_final_image {
@@ -175,17 +186,10 @@ pub fn generate_gem_art(image_data: &str, colors: &Vec<Color>, margin_mm: f32, f
             let center_y = (gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
             let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
 
-            let mut blend_towards_colour = 255;
-            if (r/3 + g/3 + b/3) > 128 {
-                blend_towards_colour = 0
-            }
-            let blended_r = (r as u16 + blend_towards_colour) / 2;
-            let blended_g = (g as u16 + blend_towards_colour) / 2;
-            let blended_b = (b as u16 + blend_towards_colour) / 2;
-            let blended_rgba = Rgba([blended_r as u8, blended_g as u8, blended_b as u8, 255]);
+            let blended_rgba = Rgba([color_info.blended_r, color_info.blended_g, color_info.blended_b, 255]);
             draw_hollow_circle_mut(&mut gem_art_image, (center_x, center_y), radius, blended_rgba);
 
-            let letter = letter_map.get(&color_info.floss_number).unwrap();
+            let letter = letter_map.get(&color_info.floss).unwrap();
             let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
             let v_metrics = font.v_metrics(scale);
             let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
@@ -240,7 +244,7 @@ pub fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String>
     }
 
     let font_data = include_bytes!("../static/DejaVuSans.ttf");
-    let font = Font::try_from_bytes(font_data as &[u8]).unwrap();
+    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
     let scale = Scale::uniform(48.0);
     let text_color = Rgba([0, 0, 0, 255]);
     let line_height = 80;
