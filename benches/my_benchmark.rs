@@ -1,5 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use yew_project::{generate_gem_art, generate_text_image, ImageFitOption, dmc_colors, Color, GemCount};
+use yew_project::image_processing::{generate_gem_art, generate_text_image};
+use yew_project::models::{ImageFitOption, Color, GemCount};
+use yew_project::dmc_colors;
 use image::{ImageBuffer, Rgba};
 use std::time::Duration;
 use base64::{engine::general_purpose, Engine as _};
