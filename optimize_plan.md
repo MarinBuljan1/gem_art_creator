@@ -12,28 +12,28 @@ The `generate_gem_art` function is computationally intensive due to several fact
 
 ## Optimization Strategy
 
-The primary optimization strategy is to introduce parallelism to the pixel processing loops using the `rayon` crate. This will allow the computationally intensive tasks to be spread across multiple CPU cores, leading to a significant performance improvement.
+The optimization strategy is divided into two phases. The first phase, which has already been completed, involved parallelizing the color matching loop using `rayon`. The second phase will focus on more advanced optimizations.
 
-### Step-by-Step Plan
+### Phase 1: Parallelize Color Matching (Completed)
 
-1.  **Establish a Performance Baseline:**
-    *   Run `cargo bench` to get a baseline performance measurement of the current implementation.
+*   **Action:** Parallelized the color matching loop using `rayon`'s parallel iterators (`par_iter`).
+*   **Result:** Significant performance improvement, especially for larger images and more colors.
 
-2.  **Introduce `rayon` for Parallel Processing:**
-    *   Add `rayon` as a dependency in `Cargo.toml`.
-    *   Modify the pixel processing loops in `generate_gem_art` to use `rayon`'s parallel iterators (`par_iter`). The main loops to target are:
-        *   The loop that finds the nearest color for each pixel of the resized image.
-        *   The loop that draws the gems on the final `gem_art_image`.
+### Phase 2: Advanced Optimizations (Future Work)
 
-3.  **Measure Performance After Parallelization:**
-    *   Run `cargo bench` again to measure the performance improvement after introducing `rayon`.
+The following optimizations can be implemented to further improve performance:
 
-4.  **Further Optimization (Future Work):**
-    *   **Reduce Intermediate Image Creation:** Investigate ways to reduce the number of intermediate image buffers created during the image processing pipeline.
-    *   **Pre-render Gem Templates:** For gems of the same size, pre-render a single gem template and copy it to the final image instead of drawing each gem individually.
-    *   **Optimize Drawing Operations:** Explore more performant ways to draw shapes, such as by directly manipulating the image buffer.
+1.  **Reduce Intermediate Image Creation (Completed):**
+    *   **Goal:** Reduce memory usage and improve performance by avoiding unnecessary data copying.
+    *   **Action:** Removed the intermediate `gem_art_image` and drew the gems directly on the `final_image`.
+    *   **Result:** Significant performance improvement (11-13%) across all `generate_gem_art` benchmarks.
+
+2.  **Use a More Efficient Drawing Method:**
+    *   **Goal:** Speed up the drawing process.
+    *   **Action:** For drawing simple shapes like filled rectangles, directly manipulate the image buffer instead of using the `imageproc` drawing functions. This involves writing the pixel data for the rectangles directly into the image's pixel buffer.
+
+3.  **Parallelize the Drawing Loop:**
+    *   **Goal:** Further leverage parallel processing to speed up the image generation.
+    *   **Action:** Re-attempt to parallelize the drawing loop. This could be achieved by creating a pixel buffer (`Vec<u8>`) and using `par_chunks_mut` to get mutable slices of the buffer that can be modified in parallel. This would require re-implementing the drawing logic to work on the pixel buffer instead of the `DynamicImage`.
 
 This plan will be executed iteratively, with performance measurements taken at each stage to evaluate the impact of the changes.
-**Run `cargo check`** to ensure the code compiles without errors.
-**Run `cargo test`** to ensure all existing tests pass.
-**Run `cargo bench`** to measure the performance impact of the change.

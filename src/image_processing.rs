@@ -170,43 +170,6 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
     let gem_pixels_on_final_image = (gem_size_mm * pixels_per_mm).round() as u32;
     let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
     let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
-    let mut gem_art_image = DynamicImage::new_rgba8(gem_art_width_px, gem_art_height_px);
-    let font_data = include_bytes!("../static/DejaVuSans.ttf");
-    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
-
-    for gx in 0..num_gems_x {
-        for gy in 0..num_gems_y {
-            let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
-            let color_info = &filtered_dmc_colors[closest_color_index];
-            let gem_rgba = Rgba([color_info.r, color_info.g, color_info.b, 255]);
-
-            for px in 0..gem_pixels_on_final_image {
-                for py in 0..gem_pixels_on_final_image {
-                    gem_art_image.put_pixel(
-                        gx * gem_pixels_on_final_image + px,
-                        gy * gem_pixels_on_final_image + py,
-                        gem_rgba,
-                    );
-                }
-            }
-
-            let center_x = (gx * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
-            let center_y = (gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
-            let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
-
-            let blended_rgba = Rgba([color_info.blended_r, color_info.blended_g, color_info.blended_b, 255]);
-            draw_hollow_circle_mut(&mut gem_art_image, (center_x, center_y), radius, blended_rgba);
-
-            let letter = letter_map.get(&color_info.floss).unwrap();
-            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
-            let v_metrics = font.v_metrics(scale);
-            let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
-            let glyphs_width = glyphs.iter().map(|g| g.pixel_bounding_box().unwrap().width() as f32).sum::<f32>();
-            let text_x = center_x - (glyphs_width / 2.0) as i32;
-            let text_y = center_y - (v_metrics.ascent - v_metrics.descent) as i32 / 2;
-            draw_text_mut(&mut gem_art_image, blended_rgba, text_x, text_y, scale, &font, &letter);
-        }
-    }
 
     let mut final_image = DynamicImage::new_rgba8(a4_width_px, a4_height_px);
     for x in 0..a4_width_px {
@@ -222,7 +185,42 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
     let paste_x = margin_px + offset_x;
     let paste_y = margin_px + offset_y;
 
-    image::imageops::overlay(&mut final_image, &gem_art_image, paste_x as i64, paste_y as i64);
+    let font_data = include_bytes!("../static/DejaVuSans.ttf");
+    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
+
+    for gx in 0..num_gems_x {
+        for gy in 0..num_gems_y {
+            let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
+            let color_info = &filtered_dmc_colors[closest_color_index];
+            let gem_rgba = Rgba([color_info.r, color_info.g, color_info.b, 255]);
+
+            for px in 0..gem_pixels_on_final_image {
+                for py in 0..gem_pixels_on_final_image {
+                    final_image.put_pixel(
+                        paste_x + gx * gem_pixels_on_final_image + px,
+                        paste_y + gy * gem_pixels_on_final_image + py,
+                        gem_rgba,
+                    );
+                }
+            }
+
+            let center_x = (paste_x + gx * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
+            let center_y = (paste_y + gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
+            let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
+
+            let blended_rgba = Rgba([color_info.blended_r, color_info.blended_g, color_info.blended_b, 255]);
+            draw_hollow_circle_mut(&mut final_image, (center_x, center_y), radius, blended_rgba);
+
+            let letter = letter_map.get(&color_info.floss).unwrap();
+            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
+            let v_metrics = font.v_metrics(scale);
+            let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
+            let glyphs_width = glyphs.iter().map(|g| g.pixel_bounding_box().unwrap().width() as f32).sum::<f32>();
+            let text_x = center_x - (glyphs_width / 2.0) as i32;
+            let text_y = center_y - (v_metrics.ascent - v_metrics.descent) as i32 / 2;
+            draw_text_mut(&mut final_image, blended_rgba, text_x, text_y, scale, &font, &letter);
+        }
+    }
 
     let mut buf = Vec::new();
     final_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
