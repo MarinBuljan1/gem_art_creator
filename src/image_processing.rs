@@ -4,6 +4,7 @@ use palette::{Srgb, Lab, IntoColor};
 use imageproc::drawing::{draw_hollow_circle_mut, draw_text_mut, draw_filled_circle_mut};
 use rusttype::{Font, Scale};
 use std::collections::HashMap;
+use rayon::prelude::*;
 use std::sync::OnceLock;
 use kiddo::KdTree;
 use crate::models::{ImageFitOption, GemCount, Color, DmcColorPrecomputed};
@@ -131,23 +132,30 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
 
     let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
-    let mut color_counts: HashMap<String, (u32, String)> = HashMap::new();
-    let mut gem_grid = Vec::with_capacity((num_gems_x * num_gems_y) as usize);
-
-    for gx in 0..num_gems_x {
-        for gy in 0..num_gems_y {
+    let gem_grid: Vec<usize> = (0..num_gems_y)
+        .into_par_iter()
+        .flat_map(|gy| (0..num_gems_x).into_par_iter().map(move |gx| (gx, gy)))
+        .map(|(gx, gy)| {
             let pixel = resized_img.get_pixel(gx, gy);
-            let srgb_pixel = Srgb::new(pixel[0] as f32 / 255.0, pixel[1] as f32 / 255.0, pixel[2] as f32 / 255.0);
+            let srgb_pixel = Srgb::new(
+                pixel[0] as f32 / 255.0,
+                pixel[1] as f32 / 255.0,
+                pixel[2] as f32 / 255.0,
+            );
             let lab_pixel: Lab = srgb_pixel.into_color();
+    
+            let nearest_neighbor = filtered_kdtree
+                .nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean)
+                .unwrap();
+            *nearest_neighbor.1
+        })
+        .collect();
 
-            let nearest_neighbor = filtered_kdtree.nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean).unwrap();
-            let closest_color_index = *nearest_neighbor.1;
-            
-            let color_info = &filtered_dmc_colors[closest_color_index];
-            let entry = color_counts.entry(color_info.floss.clone()).or_insert((0, color_info.hex.clone()));
-            entry.0 += 1;
-            gem_grid.push(closest_color_index);
-        }
+    let mut color_counts: HashMap<String, (u32, String)> = HashMap::new();
+    for &closest_color_index in &gem_grid {
+        let color_info = &filtered_dmc_colors[closest_color_index];
+        let entry = color_counts.entry(color_info.floss.clone()).or_insert((0, color_info.hex.clone()));
+        entry.0 += 1;
     }
 
     let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex }).collect();

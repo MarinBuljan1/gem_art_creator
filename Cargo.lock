@@ -1986,6 +1986,7 @@ dependencies = [
  "kiddo",
  "log",
  "palette",
+ "rayon",
  "regex",
  "rusttype",
  "serde",
