@@ -28,9 +28,10 @@ The following optimizations can be implemented to further improve performance:
     *   **Action:** Removed the intermediate `gem_art_image` and drew the gems directly on the `final_image`.
     *   **Result:** Significant performance improvement (11-13%) across all `generate_gem_art` benchmarks.
 
-2.  **Use a More Efficient Drawing Method:**
+2.  **Use a More Efficient Drawing Method (Skipped):**
     *   **Goal:** Speed up the drawing process.
     *   **Action:** For drawing simple shapes like filled rectangles, directly manipulate the image buffer instead of using the `imageproc` drawing functions. This involves writing the pixel data for the rectangles directly into the image's pixel buffer.
+    *   **Justification:** The `imageproc` drawing functions are likely already well-optimized. Replacing them with manual implementations is a complex task that is unlikely to yield a significant performance improvement.
 
 3.  **Parallelize the Drawing Loop:**
     *   **Goal:** Further leverage parallel processing to speed up the image generation.
