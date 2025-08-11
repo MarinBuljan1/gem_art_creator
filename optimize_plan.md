@@ -33,8 +33,9 @@ The following optimizations can be implemented to further improve performance:
     *   **Action:** For drawing simple shapes like filled rectangles, directly manipulate the image buffer instead of using the `imageproc` drawing functions. This involves writing the pixel data for the rectangles directly into the image's pixel buffer.
     *   **Justification:** The `imageproc` drawing functions are likely already well-optimized. Replacing them with manual implementations is a complex task that is unlikely to yield a significant performance improvement.
 
-3.  **Parallelize the Drawing Loop:**
+3.  **Parallelize the Drawing Loop (Skipped):**
     *   **Goal:** Further leverage parallel processing to speed up the image generation.
-    *   **Action:** Re-attempt to parallelize the drawing loop. This could be achieved by creating a pixel buffer (`Vec<u8>`) and using `par_chunks_mut` to get mutable slices of the buffer that can be modified in parallel. This would require re-implementing the drawing logic to work on the pixel buffer instead of the `DynamicImage`.
+    *   **Action:** Re-attempt to parallelize the drawing loop.
+    *   **Justification:** The drawing operations are not easily parallelizable because they all modify the same `final_image`. Using a `Mutex` to protect the image results in a performance regression due to high contention. Other approaches are very complex and have a high risk of introducing new bugs with a low probability of a significant performance gain.
 
 This plan will be executed iteratively, with performance measurements taken at each stage to evaluate the impact of the changes.
