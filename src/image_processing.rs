@@ -132,9 +132,9 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
 
     let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
-    let gem_grid: Vec<usize> = (0..num_gems_y)
+    let gem_grid: Vec<usize> = (0..num_gems_x)
         .into_par_iter()
-        .flat_map(|gy| (0..num_gems_x).into_par_iter().map(move |gx| (gx, gy)))
+        .flat_map(|gx| (0..num_gems_y).into_par_iter().map(move |gy| (gx, gy)))
         .map(|(gx, gy)| {
             let pixel = resized_img.get_pixel(gx, gy);
             let srgb_pixel = Srgb::new(
