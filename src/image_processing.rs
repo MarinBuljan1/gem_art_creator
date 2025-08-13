@@ -25,7 +25,20 @@ fn init_dmc_colors_data() -> Result<(Vec<DmcColorPrecomputed>, KdTree<f32, usize
     Ok((precomputed_colors, kdtree))
 }
 
-pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
+#[derive(Clone)]
+pub struct GemArtData {
+    pub gem_grid: Vec<usize>,
+    pub letter_map: HashMap<String, String>,
+    pub num_gems_x: u32,
+    pub num_gems_y: u32,
+    pub gem_pixels_on_final_image: u32,
+    pub a4_width_px: u32,
+    pub a4_height_px: u32,
+    pub margin_px: u32,
+    pub filtered_dmc_colors: Vec<DmcColorPrecomputed>,
+}
+
+pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>, GemArtData), String> {
     let (all_dmc_colors, _kdtree) = DMC_COLORS_DATA.get_or_init(|| init_dmc_colors_data().expect("Failed to initialize DMC colors data"));
 
     // Filter precomputed colors based on selected_colors
@@ -64,7 +77,7 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
     // Determine initial canvas orientation (before potential swap)
     let is_canvas_landscape = canvas_width_mm > canvas_height_mm;
 
-    // If orientations don\'t match, swap canvas dimensions to match image orientation
+    // If orientations don't match, swap canvas dimensions to match image orientation
     if is_image_landscape != is_canvas_landscape {
         std::mem::swap(&mut canvas_width_mm, &mut canvas_height_mm);
     }
@@ -185,9 +198,6 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
     let paste_x = margin_px + offset_x;
     let paste_y = margin_px + offset_y;
 
-    let font_data = include_bytes!("../static/DejaVuSans.ttf");
-    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
-
     for gx in 0..num_gems_x {
         for gy in 0..num_gems_y {
             let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
@@ -203,16 +213,87 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
                     );
                 }
             }
+        }
+    }
+
+    let mut buf = Vec::new();
+    final_image.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).map_err(|e| e.to_string())?;
+    let encoded_data = general_purpose::STANDARD.encode(&buf);
+    let image_data_url = format!("data:image/png;base64,{}", encoded_data);
+
+    let gem_art_data = GemArtData {
+        gem_grid,
+        letter_map,
+        num_gems_x,
+        num_gems_y,
+        gem_pixels_on_final_image,
+        a4_width_px,
+        a4_height_px,
+        margin_px,
+        filtered_dmc_colors,
+    };
+
+    Ok((image_data_url, sorted_counts, gem_art_data))
+}
+
+pub fn generate_gem_art_final(gem_art_data: &GemArtData) -> Result<String, String> {
+    let GemArtData {
+        gem_grid,
+        letter_map,
+        num_gems_x,
+        num_gems_y,
+        gem_pixels_on_final_image,
+        a4_width_px,
+        a4_height_px,
+        margin_px,
+        filtered_dmc_colors,
+    } = gem_art_data;
+
+    let gem_art_width_px = num_gems_x * gem_pixels_on_final_image;
+    let gem_art_height_px = num_gems_y * gem_pixels_on_final_image;
+
+    let mut final_image = DynamicImage::new_rgba8(*a4_width_px, *a4_height_px);
+    for x in 0..*a4_width_px {
+        for y in 0..*a4_height_px {
+            final_image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
+        }
+    }
+
+    let available_width_px = a4_width_px - (2 * margin_px);
+    let available_height_px = a4_height_px - (2 * margin_px);
+    let offset_x = (available_width_px - gem_art_width_px) / 2;
+    let offset_y = (available_height_px - gem_art_height_px) / 2;
+    let paste_x = margin_px + offset_x;
+    let paste_y = margin_px + offset_y;
+
+    let font_data = include_bytes!("../static/DejaVuSans.ttf");
+    let font = Font::try_from_bytes(font_data as &[_]).unwrap();
+
+    for gx in 0..*num_gems_x {
+        for gy in 0..*num_gems_y {
+            let closest_color_index = gem_grid[(gx * num_gems_y + gy) as usize];
+            let color_info = &filtered_dmc_colors[closest_color_index];
+            let gem_rgba = Rgba([color_info.r, color_info.g, color_info.b, 255]);
+
+            for px in 0..*gem_pixels_on_final_image {
+                for py in 0..*gem_pixels_on_final_image {
+                    final_image.put_pixel(
+                        paste_x + gx * gem_pixels_on_final_image + px,
+                        paste_y + gy * gem_pixels_on_final_image + py,
+                        gem_rgba,
+                    );
+                }
+            }
 
             let center_x = (paste_x + gx * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
             let center_y = (paste_y + gy * gem_pixels_on_final_image + gem_pixels_on_final_image / 2) as i32;
-            let radius = ((gem_pixels_on_final_image / 2) - 2) as i32;
+            let radius = ((*gem_pixels_on_final_image / 2) - 2) as i32;
 
             let blended_rgba = Rgba([color_info.blended_r, color_info.blended_g, color_info.blended_b, 255]);
             draw_hollow_circle_mut(&mut final_image, (center_x, center_y), radius, blended_rgba);
 
             let letter = letter_map.get(&color_info.floss).unwrap();
-            let scale = Scale::uniform(gem_pixels_on_final_image as f32 * 0.6);
+            let scale = Scale::uniform(*gem_pixels_on_final_image as f32 * 0.6);
             let v_metrics = font.v_metrics(scale);
             let glyphs: Vec<_> = font.layout(&letter, scale, rusttype::Point { x: 0.0, y: v_metrics.ascent }).collect();
             let glyphs_width = glyphs.iter().map(|g| g.pixel_bounding_box().unwrap().width() as f32).sum::<f32>();
@@ -227,7 +308,13 @@ pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_m
     let encoded_data = general_purpose::STANDARD.encode(&buf);
     let image_data_url = format!("data:image/png;base64,{}", encoded_data);
 
-    Ok((image_data_url, sorted_counts))
+    Ok(image_data_url)
+}
+
+pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
+    let (preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm)?;
+    let final_image_data = generate_gem_art_final(&gem_art_data)?;
+    Ok((final_image_data, sorted_counts))
 }
 
 pub fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String> {

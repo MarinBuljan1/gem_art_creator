@@ -3,7 +3,7 @@ use yew::prelude::*;
 use web_sys::{HtmlCanvasElement, CanvasRenderingContext2d};
 use std::collections::HashSet;
 use crate::dmc_colors;
-use crate::image_processing::{generate_gem_art, generate_text_image};
+use crate::image_processing::{generate_gem_art_preview, generate_gem_art_final, generate_text_image, GemArtData};
 use crate::models::{Color, GemCount, ImageFitOption};
 
 mod help_modal;
@@ -106,6 +106,7 @@ pub fn app() -> Html {
     let generated_image_data = use_state::<Option<String>, _>(|| None);
     let gem_counts = use_state::<Vec<GemCount>, _>(|| vec![]);
     let reader = use_state::<Option<gloo_file::callbacks::FileReader>, _>(|| None);
+    let gem_art_data_state = use_state::<Option<GemArtData>, _>(|| None);
 
     let file_input_ref = use_node_ref();
 
@@ -146,6 +147,7 @@ pub fn app() -> Html {
     let generated_image_data_for_effect = generated_image_data.clone();
     let gem_counts_for_effect = gem_counts.clone();
     let dmc_colors_for_effect = dmc_colors.clone();
+    let gem_art_data_state_for_effect = gem_art_data_state.clone();
     use_effect_with_deps(
         move |(image_data, selected_dmc_colors, margin_mm, image_fit_option, custom_width_mm, custom_height_mm)| {
             let current_dmc_colors = dmc_colors_for_effect.clone();
@@ -167,17 +169,22 @@ pub fn app() -> Html {
             if colors_for_generation.is_empty() {
                 generated_image_data_for_effect.set(None);
                 gem_counts_for_effect.set(vec![]);
+                gem_art_data_state_for_effect.set(None);
                 return;
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm) {
-                    Ok((data, counts)) => {
-                                                                        generated_image_data_for_effect.set(Some(data));
+                match generate_gem_art_preview(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm) {
+                    Ok((preview_data, counts, gem_art_data)) => {
+                        generated_image_data_for_effect.set(Some(preview_data));
                         gem_counts_for_effect.set(counts);
+                        gem_art_data_state_for_effect.set(Some(gem_art_data));
                     }
                     Err(_e) => {
                         // Handle error
+                        generated_image_data_for_effect.set(None);
+                        gem_counts_for_effect.set(vec![]);
+                        gem_art_data_state_for_effect.set(None);
                     }
                 }
             }
@@ -186,16 +193,18 @@ pub fn app() -> Html {
     );
 
     let download = {
-        let generated_image_data = generated_image_data.clone();
+        let gem_art_data_state = gem_art_data_state.clone();
         let gem_counts = gem_counts.clone();
         Callback::from(move |_| {
-            if let Some(data) = (*generated_image_data).as_ref() {
-                let document = web_sys::window().unwrap().document().unwrap();
-                let link = document.create_element("a").unwrap();
-                let link: web_sys::HtmlAnchorElement = link.dyn_into().unwrap();
-                link.set_href(data);
-                link.set_download("gem_art.png");
-                link.click();
+            if let Some(gem_art_data) = (*gem_art_data_state).as_ref() {
+                if let Ok(final_image_data) = generate_gem_art_final(gem_art_data) {
+                    let document = web_sys::window().unwrap().document().unwrap();
+                    let link = document.create_element("a").unwrap();
+                    let link: web_sys::HtmlAnchorElement = link.dyn_into().unwrap();
+                    link.set_href(&final_image_data);
+                    link.set_download("gem_art.png");
+                    link.click();
+                }
             }
 
             if let Ok(text_image_data) = generate_text_image(&gem_counts) {
