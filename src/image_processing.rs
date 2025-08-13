@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use std::sync::OnceLock;
 use kiddo::KdTree;
 use crate::models::{ImageFitOption, GemCount, Color, DmcColorPrecomputed};
-use crate::utils::to_excel_column;
+use crate::utils::{to_excel_column, expand_shorthand_hex};
 
 static DMC_COLORS_DATA: OnceLock<(Vec<DmcColorPrecomputed>, KdTree<f32, usize, 3>)> = OnceLock::new();
 
@@ -46,8 +46,35 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
     let mut filtered_kdtree = KdTree::new();
     let mut floss_to_index_map: HashMap<String, usize> = HashMap::new();
 
-    for (_i, selected_color) in selected_colors.iter().enumerate() {
-        if let Some(dmc_color) = all_dmc_colors.iter().find(|c| c.floss.trim() == selected_color.floss_number.trim()) {
+    for selected_color in selected_colors.iter() {
+        if selected_color.floss_number.trim().is_empty() {
+            // Create a custom DmcColorPrecomputed for the custom color
+            let custom_color = DmcColorPrecomputed {
+                floss: format!("#custom_{}", selected_color.value), // Unique identifier
+                dmc_name: "Custom".to_string(),
+                r: selected_color.r,
+                g: selected_color.g,
+                b: selected_color.b,
+                hex: expand_shorthand_hex(&selected_color.value),
+                lab_l: 0.0, // These values would need to be calculated if you want to use them in color matching
+                lab_a: 0.0,
+                lab_b: 0.0,
+                blended_r: 0, // Placeholder, adjust as needed
+                blended_g: 0,
+                blended_b: 0,
+            };
+            let lab: Lab = Srgb::new(custom_color.r as f32 / 255.0, custom_color.g as f32 / 255.0, custom_color.b as f32 / 255.0).into_color();
+            
+            let mut updated_custom_color = custom_color.clone();
+            updated_custom_color.lab_l = lab.l;
+            updated_custom_color.lab_a = lab.a;
+            updated_custom_color.lab_b = lab.b;
+
+            let _ = filtered_kdtree.add(&[updated_custom_color.lab_l, updated_custom_color.lab_a, updated_custom_color.lab_b], filtered_dmc_colors.len());
+            floss_to_index_map.insert(updated_custom_color.floss.clone(), filtered_dmc_colors.len());
+            filtered_dmc_colors.push(updated_custom_color);
+
+        } else if let Some(dmc_color) = all_dmc_colors.iter().find(|c| c.floss.trim() == selected_color.floss_number.trim()) {
             let _ = filtered_kdtree.add(&[dmc_color.lab_l, dmc_color.lab_a, dmc_color.lab_b], filtered_dmc_colors.len());
             floss_to_index_map.insert(dmc_color.floss.clone(), filtered_dmc_colors.len());
             filtered_dmc_colors.push(dmc_color.clone());
@@ -171,7 +198,7 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
         entry.0 += 1;
     }
 
-    let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex }).collect();
+    let mut sorted_counts: Vec<_> = color_counts.into_iter().map(|(floss, (count, hex))| GemCount { floss, count, hex: expand_shorthand_hex(&hex) }).collect();
     sorted_counts.sort_by(|a, b| b.count.cmp(&a.count));
 
     let letter_map: HashMap<String, String> = sorted_counts
@@ -354,15 +381,17 @@ pub fn generate_text_image(gem_counts: &Vec<GemCount>) -> Result<String, String>
         }
 
         let letter = to_excel_column(i + 1);
-        let r = u8::from_str_radix(&count.hex[0..2], 16).unwrap();
-        let g = u8::from_str_radix(&count.hex[2..4], 16).unwrap();
-        let b = u8::from_str_radix(&count.hex[4..6], 16).unwrap();
-        let circle_color = Rgba([r, g, b, 255]);
+        if count.hex.len() >= 6 {
+            let r = u8::from_str_radix(&count.hex[0..2], 16).unwrap();
+            let g = u8::from_str_radix(&count.hex[2..4], 16).unwrap();
+            let b = u8::from_str_radix(&count.hex[4..6], 16).unwrap();
+            let circle_color = Rgba([r, g, b, 255]);
 
-        let v_metrics = font.v_metrics(scale);
-        let circle_y = y as i32 + (v_metrics.ascent - v_metrics.descent) as i32 / 2;
+            let v_metrics = font.v_metrics(scale);
+            let circle_y = y as i32 + (v_metrics.ascent - v_metrics.descent) as i32 / 2;
 
-        draw_filled_circle_mut(&mut text_image, (x as i32 + 20, circle_y), 15, circle_color);
+            draw_filled_circle_mut(&mut text_image, (x as i32 + 20, circle_y), 15, circle_color);
+        }
         draw_text_mut(&mut text_image, text_color, x as i32 + 50, y as i32, scale, &font, &letter);
 
         let line = format!(" - #{}: {} gems", count.floss, count.count);
