@@ -256,8 +256,8 @@ pub fn app() -> Html {
                     on_upload_button_click={on_upload_button_click.clone()}
                     download={download.clone()}
                     generated_image_data_is_none={(*generated_image_data).is_none()}
+                    on_settings_click={on_settings_click.clone()}
                 />
-                <button onclick={on_settings_click} class={classes!("settings-button")}>{ "⚙️" }</button>
                 { if *is_settings_open {
                     html! {
                         <SettingsPanel
