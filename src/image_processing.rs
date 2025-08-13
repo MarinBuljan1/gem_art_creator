@@ -339,7 +339,7 @@ pub fn generate_gem_art_final(gem_art_data: &GemArtData) -> Result<String, Strin
 }
 
 pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
-    let (preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm)?;
+    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm)?;
     let final_image_data = generate_gem_art_final(&gem_art_data)?;
     Ok((final_image_data, sorted_counts))
 }
