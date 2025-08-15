@@ -40,6 +40,10 @@ crate-type = ["cdylib", "rlib"]
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.10.1"
 
+[[bench]]
+name = "my_benchmark"
+harness = false
+
 [[bin]]
 name = "generate_color_map"
 path = "src/generate_color_map.rs"
