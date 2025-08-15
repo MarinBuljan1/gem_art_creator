@@ -22,7 +22,7 @@ fn load_dmc_colors_data() -> Result<(Vec<DmcColorPrecomputed>, KdTree<f32, usize
 fn main() -> Result<(), String> {
     let (dmc_colors, kdtree) = load_dmc_colors_data()?;
 
-    let mut color_map: HashMap<String, String> = HashMap::new();
+    let mut color_map: HashMap<String, usize> = HashMap::new();
 
     println!("Generating color map...");
 
@@ -44,8 +44,7 @@ fn main() -> Result<(), String> {
                     let closest_color_index = *nearest_neighbor.1;
                     let closest_dmc_color = &dmc_colors[closest_color_index];
 
-                    let value = format!("{:02x}{:02x}{:02x}", closest_dmc_color.r as u8, closest_dmc_color.g as u8, closest_dmc_color.b as u8);
-                    color_map.insert(key, value);
+                    color_map.insert(key, closest_color_index);
                 }
             }
         }
