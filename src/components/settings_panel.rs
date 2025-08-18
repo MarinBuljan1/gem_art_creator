@@ -81,6 +81,9 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                             </div>
                         </div>
                     </div>
+                    <div class={classes!("setting")}>
+                        <a href="https://www.instructables.com/DIY-Diamond-Painting-Make-Your-Own-Simple-Adhesive/" target="_blank">{ "DIY Instructions" }</a>
+                    </div>
                 </div>
             }
         } else {

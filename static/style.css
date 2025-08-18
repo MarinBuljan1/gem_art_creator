@@ -312,7 +312,7 @@ canvas {
 .settings .setting {
   margin: 0.5em 0;
 }
-.settings .setting label {
+.settings .setting label, .settings .setting a {
   padding: 0 0.4em;
 }
 
