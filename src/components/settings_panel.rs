@@ -14,6 +14,7 @@ pub struct SettingsPanelProps {
     pub on_help_icon_mouseover: Callback<MouseEvent>,
     pub on_help_icon_mouseout: Callback<MouseEvent>,
     pub on_help_icon_click: Callback<MouseEvent>,
+    pub gem_size_mm: UseStateHandle<f32>,
 }
 
 #[function_component(SettingsPanel)]
@@ -31,6 +32,16 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                                 margin_mm.set(input.value().parse().unwrap_or(30.0));
                             })
                         }} min="0" />
+                    </div>
+                    <div class={classes!("setting")}>
+                        <label for="gem_size_mm">{ "Gem Size (mm)" }</label>
+                        <input type="number" id="gem_size_mm" value={props.gem_size_mm.to_string()} onchange={{
+                            let gem_size_mm = props.gem_size_mm.clone();
+                            Callback::from(move |e: Event| {
+                                let input: HtmlInputElement = e.target_unchecked_into();
+                                gem_size_mm.set(input.value().parse::<f32>().unwrap_or(2.7).max(0.1));
+                            })
+                        }} min="0.1" step="0.1" />
                     </div>
                     <div class={classes!("setting")}>
                         <div class={classes!("page-sizing-input-group")}>

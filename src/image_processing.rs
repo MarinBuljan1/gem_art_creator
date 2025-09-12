@@ -38,7 +38,7 @@ pub struct GemArtData {
     pub filtered_dmc_colors: Vec<DmcColorPrecomputed>,
 }
 
-pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>, GemArtData), String> {
+pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>, GemArtData), String> {
     let (all_dmc_colors, _kdtree) = DMC_COLORS_DATA.get_or_init(|| init_dmc_colors_data().expect("Failed to initialize DMC colors data"));
 
     // Filter precomputed colors based on selected_colors
@@ -91,7 +91,6 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
 
     let mut canvas_width_mm = custom_width_mm.unwrap_or(210.0);
     let mut canvas_height_mm = custom_height_mm.unwrap_or(297.0);
-    let gem_size_mm = 2.7;
     let dpi = 300.0;
     let mm_per_inch = 25.4;
     let pixels_per_mm = dpi / mm_per_inch;
@@ -338,8 +337,8 @@ pub fn generate_gem_art_final(gem_art_data: &GemArtData) -> Result<String, Strin
     Ok(image_data_url)
 }
 
-pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>) -> Result<(String, Vec<GemCount>), String> {
-    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm)?;
+pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>), String> {
+    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm, gem_size_mm)?;
     let final_image_data = generate_gem_art_final(&gem_art_data)?;
     Ok((final_image_data, sorted_counts))
 }

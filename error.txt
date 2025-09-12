@@ -1,2 +1,2 @@
-GET https://marinbuljan1.github.io/icons/icon-192x192.png 404 (Not Found)Understand this error
-gem_art_creator/:1 Error while trying to use the following icon from the Manifest: https://marinbuljan1.github.io/icons/icon-192x192.png (Download error or resource isn't a valid image)
+yew_project.js:124 [Violation] 'load' handler took 817ms
+yew_project.js:124 [Violation] 'click' handler took 784ms

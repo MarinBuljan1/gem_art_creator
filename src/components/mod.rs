@@ -30,6 +30,7 @@ pub fn app() -> Html {
     let custom_height_mm = use_state(|| Some(297.0));
     let is_help_modal_open = use_state(|| false);
     let image_fit_option = use_state(|| ImageFitOption::Fit);
+    let gem_size_mm = use_state(|| 2.7);
 
     let on_sort_by_color_click = {
         let sort_by_number = sort_by_number.clone();
@@ -149,7 +150,7 @@ pub fn app() -> Html {
     let dmc_colors_for_effect = dmc_colors.clone();
     let gem_art_data_state_for_effect = gem_art_data_state.clone();
     use_effect_with_deps(
-        move |(image_data, selected_dmc_colors, margin_mm, image_fit_option, custom_width_mm, custom_height_mm)| {
+        move |(image_data, selected_dmc_colors, margin_mm, image_fit_option, custom_width_mm, custom_height_mm, gem_size_mm)| {
             let current_dmc_colors = dmc_colors_for_effect.clone();
             let colors_for_generation: Vec<Color> = selected_dmc_colors
                 .iter()
@@ -174,7 +175,7 @@ pub fn app() -> Html {
             }
 
             if let Some(image_data) = (*image_data).as_ref() {
-                match generate_gem_art_preview(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm) {
+                match generate_gem_art_preview(image_data, &colors_for_generation, **margin_mm, image_fit_option, **custom_width_mm, **custom_height_mm, **gem_size_mm) {
                     Ok((preview_data, counts, gem_art_data)) => {
                         generated_image_data_for_effect.set(Some(preview_data));
                         gem_counts_for_effect.set(counts);
@@ -189,7 +190,7 @@ pub fn app() -> Html {
                 }
             }
         },
-        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone(), image_fit_option.clone(), custom_width_mm.clone(), custom_height_mm.clone()),
+        (image_data.clone(), selected_dmc_colors.clone(), margin_mm.clone(), image_fit_option.clone(), custom_width_mm.clone(), custom_height_mm.clone(), gem_size_mm.clone()),
     );
 
     let download = {
@@ -270,6 +271,7 @@ pub fn app() -> Html {
                             on_help_icon_mouseover={on_help_icon_mouseover.clone()}
                             on_help_icon_mouseout={on_help_icon_mouseout.clone()}
                             on_help_icon_click={on_help_icon_click.clone()}
+                            gem_size_mm={gem_size_mm.clone()}
                         />
                     }
                 } else {

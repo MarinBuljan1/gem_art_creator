@@ -44,6 +44,3 @@ tempfile = "3.10.1"
 name = "my_benchmark"
 harness = false
 
-[[bin]]
-name = "generate_color_map"
-path = "src/generate_color_map.rs"
