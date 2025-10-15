@@ -1,6 +1,6 @@
 use yew_project::image_processing::{generate_gem_art, generate_text_image};
 use yew_project::utils::to_excel_column;
-use yew_project::models::{ImageFitOption, GemCount, Color};
+use yew_project::models::{ImageFitOption, GemCount, Color, ColorMappingMode};
 use std::time::Instant;
 use base64::Engine;
 use image::{DynamicImage, Rgba, GenericImage};
@@ -40,8 +40,10 @@ fn test_generate_gem_art_performance_and_correctness() {
         &colors,
         margin_mm,
         &fit_option,
+        &ColorMappingMode::Nearest,
         custom_width_mm,
         custom_height_mm,
+        2.7,
     ).unwrap();
     let duration = start_time.elapsed();
 
@@ -86,8 +88,10 @@ fn test_generate_gem_art_invalid_input() {
         &colors,
         margin_mm,
         &fit_option,
+        &ColorMappingMode::Nearest,
         custom_width_mm,
         custom_height_mm,
+        2.7,
     );
 
     assert!(result.is_err(), "generate_gem_art should return an error for invalid input");
@@ -120,8 +124,10 @@ fn test_generate_gem_art_output_verification() {
         &colors,
         margin_mm,
         &fit_option,
+        &ColorMappingMode::Nearest,
         custom_width_mm,
         custom_height_mm,
+        2.7,
     ).unwrap();
 
     // Assert gem_counts - check if the closest color is indeed red (or very close to it)
@@ -171,8 +177,10 @@ fn test_generate_gem_art_fit_option() {
         &colors,
         margin_mm,
         &ImageFitOption::Fit,
+        &ColorMappingMode::Nearest,
         custom_width_mm_portrait,
         custom_height_mm_portrait,
+        2.7,
     ).unwrap();
 
     let decoded_gem_image_data = general_purpose::STANDARD.decode(gem_image_url.split(",").nth(1).unwrap()).unwrap();
@@ -224,8 +232,10 @@ fn test_generate_gem_art_crop_option() {
         &colors,
         margin_mm,
         &ImageFitOption::Crop,
+        &ColorMappingMode::Nearest,
         custom_width_mm_portrait,
         custom_height_mm_portrait,
+        2.7,
     ).unwrap();
 
     let decoded_gem_image_data = general_purpose::STANDARD.decode(gem_image_url.split(",").nth(1).unwrap()).unwrap();
@@ -279,8 +289,10 @@ fn test_generate_gem_art_margin_application() {
         &colors,
         margin_mm_0,
         &ImageFitOption::Fit,
+        &ColorMappingMode::Nearest,
         custom_width_mm,
         custom_height_mm,
+        2.7,
     ).unwrap();
 
     let canvas_width_px_0 = (custom_width_mm.unwrap() * pixels_per_mm as f32).round() as u32;
@@ -298,8 +310,10 @@ fn test_generate_gem_art_margin_application() {
         &colors,
         margin_mm_10,
         &ImageFitOption::Fit,
+        &ColorMappingMode::Nearest,
         custom_width_mm,
         custom_height_mm,
+        2.7,
     ).unwrap();
 
     let canvas_width_px_10 = (custom_width_mm.unwrap() * pixels_per_mm as f32).round() as u32;
@@ -335,8 +349,10 @@ fn test_generate_gem_art_edge_cases() {
         &colors,
         margin_mm,
         &fit_option,
+        &ColorMappingMode::Nearest,
         Some(0.1), // Very small custom width
         Some(0.1), // Very small custom height
+        2.7,
     );
     assert!(result.is_err(), "Should return error for image too small");
     assert!(result.unwrap_err().contains("Image dimensions are too small"), "Error message should indicate image dimensions are too small");
@@ -353,8 +369,10 @@ fn test_generate_gem_art_edge_cases() {
         &colors,
         100.0, // Very large margin
         &fit_option,
+        &ColorMappingMode::Nearest,
         Some(10.0), // Small custom width
         Some(10.0), // Small custom height
+        2.7,
     );
     assert!(result.is_err(), "Should return error for margins too large");
     assert!(result.unwrap_err().contains("Image dimensions are too small"), "Error message should indicate image dimensions are too small");

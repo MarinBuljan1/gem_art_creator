@@ -13,6 +13,12 @@ pub enum ImageFitOption {
     Crop,
 }
 
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum ColorMappingMode {
+    Nearest,
+    AdaptiveLightnessStretch,
+}
+
 #[derive(Clone, PartialEq, Default, Deserialize, Serialize)]
 pub struct Color {
     pub value: String,

@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
-use crate::models::ImageFitOption;
+use crate::models::{ImageFitOption, ColorMappingMode};
 use crate::components::HelpModal;
 
 #[derive(Properties, PartialEq)]
@@ -15,6 +15,7 @@ pub struct SettingsPanelProps {
     pub on_help_icon_mouseout: Callback<MouseEvent>,
     pub on_help_icon_click: Callback<MouseEvent>,
     pub gem_size_mm: UseStateHandle<f32>,
+    pub color_mapping_mode: UseStateHandle<ColorMappingMode>,
 }
 
 #[function_component(SettingsPanel)]
@@ -89,6 +90,29 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                                     })
                                 }} />
                                 <label for="crop_to_fit">{ "Crop image to fit frame" }</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class={classes!("setting")}>
+                        <label>{ "Color Mapping" }</label>
+                        <div class={classes!("radio-group")}>
+                            <div>
+                                <input type="radio" id="mapping_nearest" name="color_mapping" value="nearest" checked={*props.color_mapping_mode == ColorMappingMode::Nearest} onchange={{
+                                    let color_mapping_mode = props.color_mapping_mode.clone();
+                                    Callback::from(move |_| {
+                                        color_mapping_mode.set(ColorMappingMode::Nearest)
+                                    })
+                                }} />
+                                <label for="mapping_nearest">{ "Direct (nearest)" }</label>
+                            </div>
+                            <div>
+                                <input type="radio" id="mapping_adaptive_l" name="color_mapping" value="adaptive_l" checked={*props.color_mapping_mode == ColorMappingMode::AdaptiveLightnessStretch} onchange={{
+                                    let color_mapping_mode = props.color_mapping_mode.clone();
+                                    Callback::from(move |_| {
+                                        color_mapping_mode.set(ColorMappingMode::AdaptiveLightnessStretch)
+                                    })
+                                }} />
+                                <label for="mapping_adaptive_l">{ "Adaptive (lightness stretch)" }</label>
                             </div>
                         </div>
                     </div>

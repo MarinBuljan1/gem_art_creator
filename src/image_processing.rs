@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use rayon::prelude::*;
 use std::sync::OnceLock;
 use kiddo::KdTree;
-use crate::models::{ImageFitOption, GemCount, Color, DmcColorPrecomputed};
+use crate::models::{ImageFitOption, GemCount, Color, DmcColorPrecomputed, ColorMappingMode};
 use crate::utils::{to_excel_column, expand_shorthand_hex};
 
 static DMC_COLORS_DATA: OnceLock<(Vec<DmcColorPrecomputed>, KdTree<f32, usize, 3>)> = OnceLock::new();
@@ -38,7 +38,7 @@ pub struct GemArtData {
     pub filtered_dmc_colors: Vec<DmcColorPrecomputed>,
 }
 
-pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>, GemArtData), String> {
+pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>, GemArtData), String> {
     let (all_dmc_colors, _kdtree) = DMC_COLORS_DATA.get_or_init(|| init_dmc_colors_data().expect("Failed to initialize DMC colors data"));
 
     // Filter precomputed colors based on selected_colors
@@ -171,6 +171,41 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
 
     let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
+    // Compute adaptive lightness stretch parameters if requested
+    let mut use_adaptive = false;
+    let mut img_l_min = 0.0f32;
+    let mut img_l_max = 0.0f32;
+    let mut pal_l_min = 0.0f32;
+    let mut pal_l_max = 0.0f32;
+    if let ColorMappingMode::AdaptiveLightnessStretch = mapping_mode {
+        // Compute image L* min/max over resized image
+        let mut local_min = f32::INFINITY;
+        let mut local_max = f32::NEG_INFINITY;
+        for gx in 0..num_gems_x {
+            for gy in 0..num_gems_y {
+                let p = resized_img.get_pixel(gx, gy);
+                let srgb = Srgb::new(p[0] as f32 / 255.0, p[1] as f32 / 255.0, p[2] as f32 / 255.0);
+                let lab: Lab = srgb.into_color();
+                if lab.l < local_min { local_min = lab.l; }
+                if lab.l > local_max { local_max = lab.l; }
+            }
+        }
+        // Compute palette L* min/max
+        let mut palette_min = f32::INFINITY;
+        let mut palette_max = f32::NEG_INFINITY;
+        for c in &filtered_dmc_colors {
+            if c.lab_l < palette_min { palette_min = c.lab_l; }
+            if c.lab_l > palette_max { palette_max = c.lab_l; }
+        }
+        if local_min.is_finite() && local_max.is_finite() && palette_min.is_finite() && palette_max.is_finite() && local_max > local_min && palette_max > palette_min {
+            use_adaptive = true;
+            img_l_min = local_min;
+            img_l_max = local_max;
+            pal_l_min = palette_min;
+            pal_l_max = palette_max;
+        }
+    }
+
     let gem_grid: Vec<usize> = (0..num_gems_x)
         .into_par_iter()
         .flat_map(|gx| (0..num_gems_y).into_par_iter().map(move |gy| (gx, gy)))
@@ -181,12 +216,32 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
                 pixel[1] as f32 / 255.0,
                 pixel[2] as f32 / 255.0,
             );
-            let lab_pixel: Lab = srgb_pixel.into_color();
-    
-            let nearest_neighbor = filtered_kdtree
-                .nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean)
-                .unwrap();
-            *nearest_neighbor.1
+            let mut lab_pixel: Lab = srgb_pixel.into_color();
+            if use_adaptive {
+                let l = lab_pixel.l;
+                let scaled = pal_l_min + (l - img_l_min) * (pal_l_max - pal_l_min) / (img_l_max - img_l_min);
+                // Clamp to palette range
+                let clamped = scaled.max(pal_l_min).min(pal_l_max);
+                lab_pixel = Lab { l: clamped, a: lab_pixel.a, b: lab_pixel.b, white_point: lab_pixel.white_point };
+            }
+            if use_adaptive {
+                // In adaptive mode, choose nearest by lightness only to better distribute tones
+                let mut best_idx = 0usize;
+                let mut best_diff = f32::INFINITY;
+                for (i, c) in filtered_dmc_colors.iter().enumerate() {
+                    let d = (lab_pixel.l - c.lab_l).abs();
+                    if d < best_diff {
+                        best_diff = d;
+                        best_idx = i;
+                    }
+                }
+                best_idx
+            } else {
+                let nearest_neighbor = filtered_kdtree
+                    .nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean)
+                    .unwrap();
+                *nearest_neighbor.1
+            }
         })
         .collect();
 
@@ -337,8 +392,8 @@ pub fn generate_gem_art_final(gem_art_data: &GemArtData) -> Result<String, Strin
     Ok(image_data_url)
 }
 
-pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>), String> {
-    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, custom_width_mm, custom_height_mm, gem_size_mm)?;
+pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>), String> {
+    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, mapping_mode, custom_width_mm, custom_height_mm, gem_size_mm)?;
     let final_image_data = generate_gem_art_final(&gem_art_data)?;
     Ok((final_image_data, sorted_counts))
 }

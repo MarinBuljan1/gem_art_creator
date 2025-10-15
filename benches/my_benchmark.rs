@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use yew_project::image_processing::{generate_gem_art_preview, generate_gem_art_final, generate_text_image, GemArtData};
-use yew_project::models::{ImageFitOption, Color, GemCount};
+use yew_project::models::{ImageFitOption, Color, GemCount, ColorMappingMode};
 use yew_project::dmc_colors;
 use image::{ImageBuffer, Rgba};
 use std::time::Duration;
@@ -40,6 +40,7 @@ fn benchmark_generate_gem_art_preview(c: &mut Criterion) {
                 &colors,
                 10.0, // margin_mm
                 &ImageFitOption::Fit, // fit_option
+                &ColorMappingMode::Nearest,
                 None, // custom_width_mm
                 None, // custom_height_mm
             ).unwrap();
@@ -65,6 +66,7 @@ fn benchmark_generate_gem_art_final(c: &mut Criterion) {
         &colors,
         10.0,
         &ImageFitOption::Fit,
+        &ColorMappingMode::Nearest,
         None,
         None,
     ).unwrap();
@@ -104,6 +106,7 @@ fn benchmark_generate_gem_art_color_count(c: &mut Criterion) {
                 &color_subset,
                 10.0, // margin_mm
                 &ImageFitOption::Fit, // fit_option
+                &ColorMappingMode::Nearest,
                 None, // custom_width_mm
                 None, // custom_height_mm
             ).unwrap();
@@ -135,6 +138,7 @@ fn benchmark_generate_gem_art_fit_vs_crop(c: &mut Criterion) {
             &colors,
             10.0, // margin_mm
             &ImageFitOption::Fit,
+            &ColorMappingMode::Nearest,
             None, // custom_width_mm
             None, // custom_height_mm
         ).unwrap();
@@ -146,6 +150,7 @@ fn benchmark_generate_gem_art_fit_vs_crop(c: &mut Criterion) {
             &colors,
             10.0, // margin_mm
             &ImageFitOption::Crop,
+            &ColorMappingMode::Nearest,
             None, // custom_width_mm
             None, // custom_height_mm
         ).unwrap();
