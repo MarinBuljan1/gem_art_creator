@@ -223,7 +223,7 @@ canvas {
 
 .text-output-container {
   width: calc(100% - 22px);
-  min-height: 30px;
+  min-height: 50px;
   max-height: 150px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -306,13 +306,16 @@ canvas {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0);
 }
 
+.settings {
+  /* Page sizing input row and contextual help */
+}
 .settings input[type=number] {
   width: 6em;
 }
 .settings .setting {
   margin: 0.5em 0;
 }
-.settings .setting label, .settings .setting a, .settings .setting .slider-row {
+.settings .setting label, .settings .setting a {
   padding: 0 0.4em;
 }
 .settings .setting > label {
@@ -329,7 +332,7 @@ canvas {
   box-shadow: 0 0 0 0 #2196F3; /* will become accent halo when checked */
   vertical-align: middle;
   margin-top: 0;
-  margin-left: 1em;
+  margin-right: 6px;
   cursor: pointer;
   transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 }
@@ -338,77 +341,13 @@ canvas {
   border-color: #fff; /* white inner ring like slider thumb */
   box-shadow: 0 0 0 1px #2196F3; /* accent halo outside */
 }
-
-/* Three-column layout for slider + labels */
-.slider-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+.settings .page-sizing-input-group {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
+  width: fit-content;
 }
-
-.slider-row > span:first-child {
-  justify-self: start;
-  text-align: left;
-}
-
-.slider-row > input[type=range] {
-  justify-self: stretch;
-  width: 100%;
-}
-
-.slider-row > span:last-child {
-  justify-self: end;
-  text-align: right;
-}
-
-.slider-row input[type=range] {
-  -webkit-appearance: none;
-  appearance: none;
-  background: none;
-  height: 24px;
-}
-
-.slider-row input[type=range]::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 4px;
-  /* Two layers: ticks (top), base track (bottom) */
-  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
-  background-size: 11.1111111111% 100%, 100% 100%;
-  background-repeat: repeat-x, no-repeat;
-}
-
-.slider-row input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  margin-top: -5px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #2196F3;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.slider-row input[type=range]::-moz-range-track {
-  height: 6px;
-  border-radius: 4px;
-  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
-  background-size: 11.1111111111% 100%, 100% 100%;
-  background-repeat: repeat-x, no-repeat;
-}
-
-.slider-row input[type=range]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #2196F3;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.help-icon {
+.settings .page-sizing-input-group .help-icon {
   display: inline-flex;
   justify-content: center;
   align-items: center;
@@ -422,15 +361,7 @@ canvas {
   margin-left: 10px;
   font-size: 0.8em;
 }
-
-.page-sizing-input-group {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: fit-content;
-}
-
-.help-modal {
+.settings .page-sizing-input-group .help-modal {
   position: absolute;
   background-color: white;
   border: 1px solid #ddd;
@@ -443,24 +374,82 @@ canvas {
   transform: translateY(-1em);
   white-space: nowrap;
 }
-
-.help-modal h3 {
+.settings .page-sizing-input-group .help-modal h3 {
   margin-top: 0;
   font-size: 1em;
   color: #4cacaf;
 }
-
-.help-modal ul {
+.settings .page-sizing-input-group .help-modal ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
-
-.help-modal li {
+.settings .page-sizing-input-group .help-modal li {
   margin-bottom: 5px;
   font-size: 0.9em;
 }
 
+/* Slider row (3 columns) with nested SCSS rules */
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0 0.4em;
+}
+.slider-row > span:first-child {
+  justify-self: start;
+  text-align: left;
+}
+.slider-row > span:last-child {
+  justify-self: end;
+  text-align: right;
+}
+.slider-row > input[type=range] {
+  justify-self: stretch;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  height: 24px;
+}
+.slider-row > input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 4px;
+  /* Two layers: ticks (top), base track (bottom) */
+  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
+  background-size: 11.1111111111% 100%, 100% 100%;
+  background-repeat: repeat-x, no-repeat;
+}
+.slider-row > input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2196F3;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.slider-row > input[type=range]::-moz-range-track {
+  height: 6px;
+  border-radius: 4px;
+  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
+  background-size: 11.1111111111% 100%, 100% 100%;
+  background-repeat: repeat-x, no-repeat;
+}
+.slider-row > input[type=range]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2196F3;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Removed global help styles in favor of nested `.settings .page-sizing-input-group` rules above */
 @media (max-width: 768px) {
   body {
     padding: 10px;
