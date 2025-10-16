@@ -459,13 +459,27 @@ $steps: 8;
         &::-webkit-slider-runnable-track {
             height: 6px;
             border-radius: 4px;
-            /* Two layers: ticks (top), base track (bottom) */
+            /* Layers: left edge tick, right edge tick, repeating ticks, base track */
             background-image:
+              linear-gradient($settings-panel-bg, $settings-panel-bg),
+              linear-gradient($settings-panel-bg, $settings-panel-bg),
               linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
               linear-gradient($track-base, $track-base);
-            background-size: calc((100% - #{$thumb-size}) / #{$steps}) 100%, 100% 100%;
-            background-position: calc(#{$thumb-size} / 2) 0, 0 0;
-            background-repeat: repeat-x, no-repeat;
+            background-size:
+              1px 100%,
+              1px 100%,
+              calc((100% - #{$thumb-size}) / #{$steps}) 100%,
+              100% 100%;
+            background-position:
+              0 0,
+              100% 0,
+              calc(#{$thumb-size} / 2) 0,
+              0 0;
+            background-repeat:
+              no-repeat,
+              no-repeat,
+              repeat-x,
+              no-repeat;
         }
         &::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -485,11 +499,25 @@ $steps: 8;
             height: 6px;
             border-radius: 4px;
             background-image:
+              linear-gradient($settings-panel-bg, $settings-panel-bg),
+              linear-gradient($settings-panel-bg, $settings-panel-bg),
               linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
               linear-gradient($track-base, $track-base);
-            background-size: calc((100% - #{$thumb-size}) / #{$steps}) 100%, 100% 100%;
-            background-position: calc(#{$thumb-size} / 2) 0, 0 0;
-            background-repeat: repeat-x, no-repeat;
+            background-size:
+              1px 100%,
+              1px 100%,
+              calc((100% - #{$thumb-size}) / #{$steps}) 100%,
+              100% 100%;
+            background-position:
+              0 0,
+              100% 0,
+              calc(#{$thumb-size} / 2) 0,
+              0 0;
+            background-repeat:
+              no-repeat,
+              no-repeat,
+              repeat-x,
+              no-repeat;
         }
         &::-moz-range-thumb {
             width: 16px;
