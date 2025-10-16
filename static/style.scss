@@ -334,10 +334,19 @@ canvas {
     .setting {
         margin: 0.5em 0;
 
-        label, a {
+        label, a, .slider-row {
             padding: 0 0.4em;
         }
+
+        > label {
+            font-weight: bold;
+        }
     }
+}
+
+#mapping_weight {
+    margin: 0 1em;
+    height: 1em;
 }
 
 .help-icon {

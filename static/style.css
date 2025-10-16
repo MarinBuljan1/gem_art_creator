@@ -312,8 +312,16 @@ canvas {
 .settings .setting {
   margin: 0.5em 0;
 }
-.settings .setting label, .settings .setting a {
+.settings .setting label, .settings .setting a, .settings .setting .slider-row {
   padding: 0 0.4em;
+}
+.settings .setting > label {
+  font-weight: bold;
+}
+
+#mapping_weight {
+  margin: 0 1em;
+  height: 1em;
 }
 
 .help-icon {

@@ -41,6 +41,7 @@ fn benchmark_generate_gem_art_preview(c: &mut Criterion) {
                 10.0, // margin_mm
                 &ImageFitOption::Fit, // fit_option
                 &ColorMappingMode::Nearest,
+                0.0, // mapping_weight
                 None, // custom_width_mm
                 None, // custom_height_mm
             ).unwrap();
@@ -67,6 +68,7 @@ fn benchmark_generate_gem_art_final(c: &mut Criterion) {
         10.0,
         &ImageFitOption::Fit,
         &ColorMappingMode::Nearest,
+        0.0,
         None,
         None,
     ).unwrap();
@@ -107,6 +109,7 @@ fn benchmark_generate_gem_art_color_count(c: &mut Criterion) {
                 10.0, // margin_mm
                 &ImageFitOption::Fit, // fit_option
                 &ColorMappingMode::Nearest,
+                0.0,
                 None, // custom_width_mm
                 None, // custom_height_mm
             ).unwrap();
@@ -139,6 +142,7 @@ fn benchmark_generate_gem_art_fit_vs_crop(c: &mut Criterion) {
             10.0, // margin_mm
             &ImageFitOption::Fit,
             &ColorMappingMode::Nearest,
+            0.0,
             None, // custom_width_mm
             None, // custom_height_mm
         ).unwrap();
@@ -151,6 +155,7 @@ fn benchmark_generate_gem_art_fit_vs_crop(c: &mut Criterion) {
             10.0, // margin_mm
             &ImageFitOption::Crop,
             &ColorMappingMode::Nearest,
+            0.0,
             None, // custom_width_mm
             None, // custom_height_mm
         ).unwrap();

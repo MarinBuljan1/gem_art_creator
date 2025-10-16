@@ -41,6 +41,7 @@ fn test_generate_gem_art_performance_and_correctness() {
         margin_mm,
         &fit_option,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm,
         custom_height_mm,
         2.7,
@@ -89,6 +90,7 @@ fn test_generate_gem_art_invalid_input() {
         margin_mm,
         &fit_option,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm,
         custom_height_mm,
         2.7,
@@ -125,6 +127,7 @@ fn test_generate_gem_art_output_verification() {
         margin_mm,
         &fit_option,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm,
         custom_height_mm,
         2.7,
@@ -178,6 +181,7 @@ fn test_generate_gem_art_fit_option() {
         margin_mm,
         &ImageFitOption::Fit,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm_portrait,
         custom_height_mm_portrait,
         2.7,
@@ -233,6 +237,7 @@ fn test_generate_gem_art_crop_option() {
         margin_mm,
         &ImageFitOption::Crop,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm_portrait,
         custom_height_mm_portrait,
         2.7,
@@ -290,6 +295,7 @@ fn test_generate_gem_art_margin_application() {
         margin_mm_0,
         &ImageFitOption::Fit,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm,
         custom_height_mm,
         2.7,
@@ -311,6 +317,7 @@ fn test_generate_gem_art_margin_application() {
         margin_mm_10,
         &ImageFitOption::Fit,
         &ColorMappingMode::Nearest,
+        0.0,
         custom_width_mm,
         custom_height_mm,
         2.7,
@@ -350,6 +357,7 @@ fn test_generate_gem_art_edge_cases() {
         margin_mm,
         &fit_option,
         &ColorMappingMode::Nearest,
+        0.0,
         Some(0.1), // Very small custom width
         Some(0.1), // Very small custom height
         2.7,
@@ -370,6 +378,7 @@ fn test_generate_gem_art_edge_cases() {
         100.0, // Very large margin
         &fit_option,
         &ColorMappingMode::Nearest,
+        0.0,
         Some(10.0), // Small custom width
         Some(10.0), // Small custom height
         2.7,

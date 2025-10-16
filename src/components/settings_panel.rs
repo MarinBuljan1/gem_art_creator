@@ -1,6 +1,6 @@
 use yew::prelude::*;
 use web_sys::HtmlInputElement;
-use crate::models::{ImageFitOption, ColorMappingMode};
+use crate::models::ImageFitOption;
 use crate::components::HelpModal;
 
 #[derive(Properties, PartialEq)]
@@ -15,7 +15,7 @@ pub struct SettingsPanelProps {
     pub on_help_icon_mouseout: Callback<MouseEvent>,
     pub on_help_icon_click: Callback<MouseEvent>,
     pub gem_size_mm: UseStateHandle<f32>,
-    pub color_mapping_mode: UseStateHandle<ColorMappingMode>,
+    pub mapping_weight: UseStateHandle<f32>,
 }
 
 #[function_component(SettingsPanel)]
@@ -46,7 +46,7 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                     </div>
                     <div class={classes!("setting")}>
                         <div class={classes!("page-sizing-input-group")}>
-                            <label>{ "Page Sizing:" }</label>
+                            <label style="font-weight: bold;">{ "Page Sizing:" }</label>
                             <input type="number" id="custom_width_mm" value={props.custom_width_mm.as_ref().map_or("".to_string(), |w| w.to_string())} onchange={{
                                 let custom_width_mm = props.custom_width_mm.clone();
                                 Callback::from(move |e: Event| {
@@ -94,26 +94,18 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                         </div>
                     </div>
                     <div class={classes!("setting")}>
-                        <label>{ "Color Mapping" }</label>
-                        <div class={classes!("radio-group")}>
-                            <div>
-                                <input type="radio" id="mapping_nearest" name="color_mapping" value="nearest" checked={*props.color_mapping_mode == ColorMappingMode::Nearest} onchange={{
-                                    let color_mapping_mode = props.color_mapping_mode.clone();
-                                    Callback::from(move |_| {
-                                        color_mapping_mode.set(ColorMappingMode::Nearest)
-                                    })
-                                }} />
-                                <label for="mapping_nearest">{ "Direct (nearest)" }</label>
-                            </div>
-                            <div>
-                                <input type="radio" id="mapping_adaptive_l" name="color_mapping" value="adaptive_l" checked={*props.color_mapping_mode == ColorMappingMode::AdaptiveLightnessStretch} onchange={{
-                                    let color_mapping_mode = props.color_mapping_mode.clone();
-                                    Callback::from(move |_| {
-                                        color_mapping_mode.set(ColorMappingMode::AdaptiveLightnessStretch)
-                                    })
-                                }} />
-                                <label for="mapping_adaptive_l">{ "Adaptive (lightness stretch)" }</label>
-                            </div>
+                        <label for="mapping_weight">{ "Color mapping style" }</label>
+                        <div class={classes!("slider-row")}>
+                            <span>{ "Match closest color" }</span>
+                            <input type="range" id="mapping_weight" min="0" max="1" step="0.05" value={props.mapping_weight.to_string()} onchange={{
+                                let mapping_weight = props.mapping_weight.clone();
+                                Callback::from(move |e: Event| {
+                                    let input: HtmlInputElement = e.target_unchecked_into();
+                                    let v = input.value().parse::<f32>().unwrap_or(0.0).clamp(0.0, 1.0);
+                                    mapping_weight.set(v);
+                                })
+                            }} />
+                            <span>{ "Balance tones across selected colors" }</span>
                         </div>
                     </div>
                     <div class={classes!("setting")}>

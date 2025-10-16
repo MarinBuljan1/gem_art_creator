@@ -17,6 +17,7 @@ pub enum ImageFitOption {
 pub enum ColorMappingMode {
     Nearest,
     AdaptiveLightnessStretch,
+    AdaptiveLightnessWeighted,
 }
 
 #[derive(Clone, PartialEq, Default, Deserialize, Serialize)]

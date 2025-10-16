@@ -38,7 +38,7 @@ pub struct GemArtData {
     pub filtered_dmc_colors: Vec<DmcColorPrecomputed>,
 }
 
-pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>, GemArtData), String> {
+pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, mapping_weight: f32, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>, GemArtData), String> {
     let (all_dmc_colors, _kdtree) = DMC_COLORS_DATA.get_or_init(|| init_dmc_colors_data().expect("Failed to initialize DMC colors data"));
 
     // Filter precomputed colors based on selected_colors
@@ -172,12 +172,19 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
     let resized_img = processed_img.resize_exact(num_gems_x, num_gems_y, FilterType::Nearest);
 
     // Compute adaptive lightness stretch parameters if requested
+    // Determine effective weight based on mode and slider
+    let mut w = mapping_weight.clamp(0.0, 1.0);
+    match mapping_mode {
+        ColorMappingMode::Nearest => { w = 0.0; }
+        ColorMappingMode::AdaptiveLightnessStretch => { w = 1.0; }
+        ColorMappingMode::AdaptiveLightnessWeighted => {}
+    }
     let mut use_adaptive = false;
     let mut img_l_min = 0.0f32;
     let mut img_l_max = 0.0f32;
     let mut pal_l_min = 0.0f32;
     let mut pal_l_max = 0.0f32;
-    if let ColorMappingMode::AdaptiveLightnessStretch = mapping_mode {
+    if w > 0.0 {
         // Compute image L* min/max over resized image
         let mut local_min = f32::INFINITY;
         let mut local_max = f32::NEG_INFINITY;
@@ -216,32 +223,42 @@ pub fn generate_gem_art_preview(image_data: &str, selected_colors: &Vec<Color>, 
                 pixel[1] as f32 / 255.0,
                 pixel[2] as f32 / 255.0,
             );
-            let mut lab_pixel: Lab = srgb_pixel.into_color();
-            if use_adaptive {
-                let l = lab_pixel.l;
-                let scaled = pal_l_min + (l - img_l_min) * (pal_l_max - pal_l_min) / (img_l_max - img_l_min);
-                // Clamp to palette range
-                let clamped = scaled.max(pal_l_min).min(pal_l_max);
-                lab_pixel = Lab { l: clamped, a: lab_pixel.a, b: lab_pixel.b, white_point: lab_pixel.white_point };
-            }
-            if use_adaptive {
-                // In adaptive mode, choose nearest by lightness only to better distribute tones
+            let lab_orig: Lab = srgb_pixel.into_color();
+            if w == 0.0 {
+                let nearest_neighbor = filtered_kdtree
+                    .nearest_one(&[lab_orig.l, lab_orig.a, lab_orig.b], &kiddo::distance::squared_euclidean)
+                    .unwrap();
+                *nearest_neighbor.1
+            } else {
+                // Stretch L* and compute blended score
+                let scaled = pal_l_min + (lab_orig.l - img_l_min) * (pal_l_max - pal_l_min) / (img_l_max - img_l_min);
+                let l_stretched = scaled.max(pal_l_min).min(pal_l_max);
                 let mut best_idx = 0usize;
-                let mut best_diff = f32::INFINITY;
+                let mut best_score = f32::INFINITY;
                 for (i, c) in filtered_dmc_colors.iter().enumerate() {
-                    let d = (lab_pixel.l - c.lab_l).abs();
-                    if d < best_diff {
-                        best_diff = d;
+                    let dl = (l_stretched - c.lab_l).abs();
+                    let dlab_l = lab_orig.l - c.lab_l;
+                    let dlab_a = lab_orig.a - c.lab_a;
+                    let dlab_b = lab_orig.b - c.lab_b;
+                    let lab_dist = (dlab_l * dlab_l + dlab_a * dlab_a + dlab_b * dlab_b).sqrt();
+                    let score = w * dl + (1.0 - w) * lab_dist;
+                    if score < best_score {
+                        best_score = score;
                         best_idx = i;
                     }
                 }
                 best_idx
-            } else {
-                let nearest_neighbor = filtered_kdtree
-                    .nearest_one(&[lab_pixel.l, lab_pixel.a, lab_pixel.b], &kiddo::distance::squared_euclidean)
-                    .unwrap();
-                *nearest_neighbor.1
             }
+            
+            
+            
+            
+            
+            
+            
+            
+            
+        
         })
         .collect();
 
@@ -392,8 +409,8 @@ pub fn generate_gem_art_final(gem_art_data: &GemArtData) -> Result<String, Strin
     Ok(image_data_url)
 }
 
-pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>), String> {
-    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, mapping_mode, custom_width_mm, custom_height_mm, gem_size_mm)?;
+pub fn generate_gem_art(image_data: &str, selected_colors: &Vec<Color>, margin_mm: f32, fit_option: &ImageFitOption, mapping_mode: &ColorMappingMode, mapping_weight: f32, custom_width_mm: Option<f32>, custom_height_mm: Option<f32>, gem_size_mm: f32) -> Result<(String, Vec<GemCount>), String> {
+    let (_preview_image_data, sorted_counts, gem_art_data) = generate_gem_art_preview(image_data, selected_colors, margin_mm, fit_option, mapping_mode, mapping_weight, custom_width_mm, custom_height_mm, gem_size_mm)?;
     let final_image_data = generate_gem_art_final(&gem_art_data)?;
     Ok((final_image_data, sorted_counts))
 }
