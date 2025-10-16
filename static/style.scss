@@ -334,7 +334,7 @@ canvas {
     .setting {
         margin: 0.5em 0;
 
-        label, a, .slider-row {
+        label, a {
             padding: 0 0.4em;
         }
 
@@ -355,7 +355,7 @@ canvas {
             box-shadow: 0 0 0 0 $accent-color; /* will become accent halo when checked */
             vertical-align: middle;
             margin-top: 0;
-            margin-left: 1em;
+            margin-right: 6px;
             cursor: pointer;
             transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
 
@@ -365,10 +365,60 @@ canvas {
                 box-shadow: 0 0 0 1px $accent-color; /* accent halo outside */
             }
         }
+    }
 
-        // .settings .radio-group input[type="radio"]:hover {
-        //     transform: translateY(-1px);
-        // }
+    /* Page sizing input row and contextual help */
+    .page-sizing-input-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: fit-content;
+
+        .help-icon {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: $primary-color;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.8em;
+        }
+
+        .help-modal {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            top: 50%;
+            left: calc(100% + 10px);
+            transform: translateY(-1em);
+            white-space: nowrap;
+
+            h3 {
+                margin-top: 0;
+                font-size: 1em;
+                color: $primary-color;
+            }
+
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            li {
+                margin-bottom: 5px;
+                font-size: 0.9em;
+            }
+        }
     }
 }
 
@@ -382,6 +432,7 @@ $track-base: #cfd6de;
     align-items: center;
     gap: 10px;
     width: 100%;
+    padding: 0 0.4em;
 
     > span:first-child {
         justify-self: start;
@@ -445,58 +496,7 @@ $track-base: #cfd6de;
     }
 }
 
-.help-icon {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: $primary-color;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 0.8em;
-}
-
-.page-sizing-input-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-    width: fit-content;
-}
-
-.help-modal {
-    position: absolute;
-    background-color: white;
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    z-index: 100;
-    top: 50%;
-    left: calc(100% + 10px); // Position to the right of the parent, plus margin
-    transform: translateY(-1em); // Adjust for vertical centering
-    white-space: nowrap; // Prevent text from wrapping
-}
-
-.help-modal h3 {
-    margin-top: 0;
-    font-size: 1em;
-    color: $primary-color;
-}
-
-.help-modal ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.help-modal li {
-    margin-bottom: 5px;
-    font-size: 0.9em;
-}
+/* Removed global help styles in favor of nested `.settings .page-sizing-input-group` rules above */
 
 @media (max-width: 768px) {
     body {
