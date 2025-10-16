@@ -339,7 +339,7 @@ canvas {
   box-shadow: 0 0 0 1px #2196F3; /* accent halo outside */
 }
 
-/* Three-column layout for slider + labels */
+/* Slider row (3 columns) with nested SCSS rules */
 .slider-row {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -347,30 +347,23 @@ canvas {
   gap: 10px;
   width: 100%;
 }
-
 .slider-row > span:first-child {
   justify-self: start;
   text-align: left;
 }
-
-.slider-row > input[type=range] {
-  justify-self: stretch;
-  width: 100%;
-}
-
 .slider-row > span:last-child {
   justify-self: end;
   text-align: right;
 }
-
-.slider-row input[type=range] {
+.slider-row > input[type=range] {
+  justify-self: stretch;
+  width: 100%;
   -webkit-appearance: none;
   appearance: none;
   background: none;
   height: 24px;
 }
-
-.slider-row input[type=range]::-webkit-slider-runnable-track {
+.slider-row > input[type=range]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 4px;
   /* Two layers: ticks (top), base track (bottom) */
@@ -378,8 +371,7 @@ canvas {
   background-size: 11.1111111111% 100%, 100% 100%;
   background-repeat: repeat-x, no-repeat;
 }
-
-.slider-row input[type=range]::-webkit-slider-thumb {
+.slider-row > input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   margin-top: -5px;
@@ -390,16 +382,14 @@ canvas {
   border: 2px solid #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
-
-.slider-row input[type=range]::-moz-range-track {
+.slider-row > input[type=range]::-moz-range-track {
   height: 6px;
   border-radius: 4px;
   background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
   background-size: 11.1111111111% 100%, 100% 100%;
   background-repeat: repeat-x, no-repeat;
 }
-
-.slider-row input[type=range]::-moz-range-thumb {
+.slider-row > input[type=range]::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;

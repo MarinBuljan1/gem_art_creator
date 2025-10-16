@@ -372,81 +372,77 @@ canvas {
     }
 }
 
-/* Three-column layout for slider + labels */
+/* Slider row (3 columns) with nested SCSS rules */
+$settings-panel-bg: color.adjust($background-color, $lightness: 3%);
+$track-base: #cfd6de;
+
 .slider-row {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     align-items: center;
     gap: 10px;
     width: 100%;
-}
 
-.slider-row > span:first-child {
-    justify-self: start;
-    text-align: left;
-}
+    > span:first-child {
+        justify-self: start;
+        text-align: left;
+    }
 
-.slider-row > input[type="range"] {
-    justify-self: stretch;
-    width: 100%;
-}
+    > span:last-child {
+        justify-self: end;
+        text-align: right;
+    }
 
-.slider-row > span:last-child {
-    justify-self: end;
-    text-align: right;
-}
+    > input[type="range"] {
+        justify-self: stretch;
+        width: 100%;
+        -webkit-appearance: none;
+        appearance: none;
+        background: none;
+        height: 24px; // space for thumb overflow
 
-// Slider tick marks on the track (10 intervals) behind the thumb
-.slider-row input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    background: none;
-    height: 24px; // provides space for thumb overflow
-}
+        // WebKit browsers (Chrome, Edge, Safari)
+        &::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 4px;
+            /* Two layers: ticks (top), base track (bottom) */
+            background-image:
+              linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
+              linear-gradient($track-base, $track-base);
+            background-size: calc(100% / 9) 100%, 100% 100%;
+            background-repeat: repeat-x, no-repeat;
+        }
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px; // center thumb over 6px track
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: $accent-color;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
 
-$settings-panel-bg: color.adjust($background-color, $lightness: 3%);
-$track-base: #cfd6de;
-
-// WebKit browsers (Chrome, Edge, Safari)
-.slider-row input[type="range"]::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 4px;
-    /* Two layers: ticks (top), base track (bottom) */
-    background-image:
-      linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
-      linear-gradient($track-base, $track-base);
-    background-size: calc(100% / 9) 100%, 100% 100%;
-    background-repeat: repeat-x, no-repeat;
-}
-.slider-row input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    margin-top: -5px; // center thumb over 6px track
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: $accent-color;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-
-// Firefox
-.slider-row input[type="range"]::-moz-range-track {
-    height: 6px;
-    border-radius: 4px;
-    background-image:
-      linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
-      linear-gradient($track-base, $track-base);
-    background-size: calc(100% / 9) 100%, 100% 100%;
-    background-repeat: repeat-x, no-repeat;
-}
-.slider-row input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: $accent-color;
-    border: 2px solid #fff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        // Firefox
+        &::-moz-range-track {
+            height: 6px;
+            border-radius: 4px;
+            background-image:
+              linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
+              linear-gradient($track-base, $track-base);
+            background-size: calc(100% / 9) 100%, 100% 100%;
+            background-repeat: repeat-x, no-repeat;
+        }
+        &::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: $accent-color;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+    }
 }
 
 .help-icon {
