@@ -318,10 +318,94 @@ canvas {
 .settings .setting > label {
   font-weight: bold;
 }
-
-#mapping_weight {
-  margin: 0 1em;
+.settings .radio-group input[type=radio] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1em;
   height: 1em;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2196F3; /* outer ring color */
+  box-shadow: 0 0 0 0 #2196F3; /* will become accent halo when checked */
+  vertical-align: middle;
+  margin-top: 0;
+  margin-left: 1em;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+.settings .radio-group input[type=radio]:checked {
+  background: #2196F3; /* thumb fill */
+  border-color: #fff; /* white inner ring like slider thumb */
+  box-shadow: 0 0 0 1px #2196F3; /* accent halo outside */
+}
+
+/* Three-column layout for slider + labels */
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.slider-row > span:first-child {
+  justify-self: start;
+  text-align: left;
+}
+
+.slider-row > input[type=range] {
+  justify-self: stretch;
+  width: 100%;
+}
+
+.slider-row > span:last-child {
+  justify-self: end;
+  text-align: right;
+}
+
+.slider-row input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  height: 24px;
+}
+
+.slider-row input[type=range]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 4px;
+  /* Two layers: ticks (top), base track (bottom) */
+  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
+  background-size: 9.0909090909% 100%, 100% 100%;
+  background-repeat: repeat-x, no-repeat;
+}
+
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2196F3;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.slider-row input[type=range]::-moz-range-track {
+  height: 6px;
+  border-radius: 4px;
+  background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
+  background-size: 9.0909090909% 100%, 100% 100%;
+  background-repeat: repeat-x, no-repeat;
+}
+
+.slider-row input[type=range]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2196F3;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .help-icon {

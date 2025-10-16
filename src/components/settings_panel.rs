@@ -97,7 +97,7 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                         <label for="mapping_weight">{ "Color mapping style" }</label>
                         <div class={classes!("slider-row")}>
                             <span>{ "Match closest color" }</span>
-                            <input type="range" id="mapping_weight" min="0" max="1" step="0.05" value={props.mapping_weight.to_string()} onchange={{
+                            <input type="range" id="mapping_weight" min="0" max="1" step="0.1" list="mapping_weight_ticks" value={props.mapping_weight.to_string()} onchange={{
                                 let mapping_weight = props.mapping_weight.clone();
                                 Callback::from(move |e: Event| {
                                     let input: HtmlInputElement = e.target_unchecked_into();
@@ -105,6 +105,19 @@ pub fn settings_panel(props: &SettingsPanelProps) -> Html {
                                     mapping_weight.set(v);
                                 })
                             }} />
+                            <datalist id="mapping_weight_ticks">
+                                <option value="0.0" />
+                                <option value="0.1" />
+                                <option value="0.2" />
+                                <option value="0.3" />
+                                <option value="0.4" />
+                                <option value="0.5" />
+                                <option value="0.6" />
+                                <option value="0.7" />
+                                <option value="0.8" />
+                                <option value="0.9" />
+                                <option value="1.0" />
+                            </datalist>
                             <span>{ "Balance tones across selected colors" }</span>
                         </div>
                     </div>

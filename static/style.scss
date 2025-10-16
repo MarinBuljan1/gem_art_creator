@@ -342,11 +342,111 @@ canvas {
             font-weight: bold;
         }
     }
+
+    .radio-group {
+        input[type="radio"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid $accent-color; /* outer ring color */
+            box-shadow: 0 0 0 0 $accent-color; /* will become accent halo when checked */
+            vertical-align: middle;
+            margin-top: 0;
+            margin-left: 1em;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+
+            &:checked {
+                background: $accent-color;      /* thumb fill */
+                border-color: #fff;             /* white inner ring like slider thumb */
+                box-shadow: 0 0 0 1px $accent-color; /* accent halo outside */
+            }
+        }
+
+        // .settings .radio-group input[type="radio"]:hover {
+        //     transform: translateY(-1px);
+        // }
+    }
 }
 
-#mapping_weight {
-    margin: 0 1em;
-    height: 1em;
+/* Three-column layout for slider + labels */
+.slider-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.slider-row > span:first-child {
+    justify-self: start;
+    text-align: left;
+}
+
+.slider-row > input[type="range"] {
+    justify-self: stretch;
+    width: 100%;
+}
+
+.slider-row > span:last-child {
+    justify-self: end;
+    text-align: right;
+}
+
+// Slider tick marks on the track (10 intervals) behind the thumb
+.slider-row input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+    height: 24px; // provides space for thumb overflow
+}
+
+$settings-panel-bg: color.adjust($background-color, $lightness: 3%);
+$track-base: #cfd6de;
+
+// WebKit browsers (Chrome, Edge, Safari)
+.slider-row input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 4px;
+    /* Two layers: ticks (top), base track (bottom) */
+    background-image:
+      linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
+      linear-gradient($track-base, $track-base);
+    background-size: calc(100% / 11) 100%, 100% 100%;
+    background-repeat: repeat-x, no-repeat;
+}
+.slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -5px; // center thumb over 6px track
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: $accent-color;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+// Firefox
+.slider-row input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 4px;
+    background-image:
+      linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
+      linear-gradient($track-base, $track-base);
+    background-size: calc(100% / 11) 100%, 100% 100%;
+    background-repeat: repeat-x, no-repeat;
+}
+.slider-row input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: $accent-color;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .help-icon {
