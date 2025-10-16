@@ -375,7 +375,7 @@ canvas {
   border-radius: 4px;
   /* Two layers: ticks (top), base track (bottom) */
   background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
-  background-size: 9.0909090909% 100%, 100% 100%;
+  background-size: 11.1111111111% 100%, 100% 100%;
   background-repeat: repeat-x, no-repeat;
 }
 
@@ -395,7 +395,7 @@ canvas {
   height: 6px;
   border-radius: 4px;
   background-image: linear-gradient(to right, rgb(249.18, 249.956, 251.12) 0 1px, transparent 1px 100%), linear-gradient(#cfd6de, #cfd6de);
-  background-size: 9.0909090909% 100%, 100% 100%;
+  background-size: 11.1111111111% 100%, 100% 100%;
   background-repeat: repeat-x, no-repeat;
 }
 

@@ -415,7 +415,7 @@ $track-base: #cfd6de;
     background-image:
       linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
       linear-gradient($track-base, $track-base);
-    background-size: calc(100% / 11) 100%, 100% 100%;
+    background-size: calc(100% / 9) 100%, 100% 100%;
     background-repeat: repeat-x, no-repeat;
 }
 .slider-row input[type="range"]::-webkit-slider-thumb {
@@ -437,7 +437,7 @@ $track-base: #cfd6de;
     background-image:
       linear-gradient(to right, $settings-panel-bg 0 1px, transparent 1px 100%),
       linear-gradient($track-base, $track-base);
-    background-size: calc(100% / 11) 100%, 100% 100%;
+    background-size: calc(100% / 9) 100%, 100% 100%;
     background-repeat: repeat-x, no-repeat;
 }
 .slider-row input[type="range"]::-moz-range-thumb {
