@@ -33,6 +33,7 @@ pub fn app() -> Html {
     let gem_size_mm = use_state(|| 2.7);
     let color_mapping_mode = use_state(|| ColorMappingMode::AdaptiveLightnessWeighted);
     let mapping_weight = use_state(|| 0.0f32);
+    let show_birthday_banner = use_state(|| false);
 
     let on_sort_by_color_click = {
         let sort_by_number = sort_by_number.clone();
@@ -198,7 +199,17 @@ pub fn app() -> Html {
     let download = {
         let gem_art_data_state = gem_art_data_state.clone();
         let gem_counts = gem_counts.clone();
+        let show_birthday_banner = show_birthday_banner.clone();
         Callback::from(move |_| {
+            // Trigger birthday banner easter egg for a short time
+            show_birthday_banner.set(true);
+            {
+                let show_birthday_banner = show_birthday_banner.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    gloo_timers::future::TimeoutFuture::new(2500).await;
+                    show_birthday_banner.set(false);
+                });
+            }
             if let Some(gem_art_data) = (*gem_art_data_state).as_ref() {
                 if let Ok(final_image_data) = generate_gem_art_final(gem_art_data) {
                     let document = web_sys::window().unwrap().document().unwrap();
@@ -252,6 +263,34 @@ pub fn app() -> Html {
     html! {
         <div class={classes!("main-container")}>
             <div class={classes!("left-panel")}>
+                { if *show_birthday_banner { html! {
+                    <>
+                        <div class={classes!("birthday-banner")}>{ "🎉 Happy Birthday Leanne! 🎂" }</div>
+                        <div class={classes!("confetti-container")}>
+                            { for (0..32).map(|_| {
+                                let emojis = ["🎉","🎊","✨","🎂","🎈"];
+                                let idx = (js_sys::Math::random() * (emojis.len() as f64)).floor() as usize % emojis.len();
+                                let emoji = emojis[idx];
+                                let dir_left = js_sys::Math::random() < 0.5f64;
+                                let large = js_sys::Math::random() < 0.5f64;
+                                let anim_name = if dir_left {
+                                    if large { "confetti-arc-left-lg" } else { "confetti-arc-left-sm" }
+                                } else {
+                                    if large { "confetti-arc-right-lg" } else { "confetti-arc-right-sm" }
+                                };
+                                let left_offset = ((js_sys::Math::random()*220.0) - 110.0).round() as i32;
+                                let bottom_offset = (20.0 + js_sys::Math::random()*14.0).round() as i32;
+                                let duration = 1.2 + js_sys::Math::random()*0.9;
+                                let delay = js_sys::Math::random()*1.7;
+                                let style = format!(
+                                    "left: calc(50% + {}px); bottom: {}px; animation: {} {:.2}s {:.2}s forwards;",
+                                    left_offset, bottom_offset, anim_name, duration, delay
+                                );
+                                html! { <span class={classes!("confetti")} style={style}>{ emoji }</span> }
+                            }) }
+                        </div>
+                    </>
+                } } else { html!{} } }
                 <h1>{ "Gem Art Creator" }</h1>
                 <FileInputButtons
                     file_input_ref={file_input_ref.clone()}

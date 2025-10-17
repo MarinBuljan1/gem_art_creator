@@ -75,6 +75,93 @@ body {
     }
 }
 
+/* Birthday banner easter egg */
+.birthday-banner {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: color.adjust($accent-color, $lightness: -5%);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    animation: birthday-pop 2.5s ease-in-out forwards;
+    pointer-events: none;
+}
+
+@keyframes birthday-pop {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.96); }
+    12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.02); }
+    20% { transform: translateX(-50%) translateY(0) scale(1.0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.98); }
+}
+
+/* Confetti burst overlay */
+.confetti-container {
+    position: fixed;
+    inset: 0; /* top/right/bottom/left: 0 */
+    pointer-events: none;
+    z-index: 999;
+}
+
+.confetti {
+    position: absolute;
+    bottom: 24px; /* sit just above the banner */
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    opacity: 0;
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-out;
+}
+
+/* Staggered bursts with varied paths, delays, durations, and start positions */
+.confetti:nth-child(1)  { left: calc(50% - 12px);  bottom: 26px; animation: confetti-arc-left-sm 1.3s 0s forwards; }
+.confetti:nth-child(2)  { left: calc(50% + 16px);  bottom: 22px; animation: confetti-arc-right-lg 1.8s .15s forwards; }
+.confetti:nth-child(3)  { left: calc(50% - 36px);  bottom: 28px; animation: confetti-arc-left-lg 1.6s .3s forwards; }
+.confetti:nth-child(4)  { left: calc(50% + 8px);   bottom: 20px; animation: confetti-arc-right-sm 1.2s .45s forwards; }
+.confetti:nth-child(5)  { left: calc(50% - 56px);  bottom: 24px; animation: confetti-arc-left-sm 1.7s .6s forwards; }
+.confetti:nth-child(6)  { left: calc(50% + 40px);  bottom: 30px; animation: confetti-arc-right-lg 1.9s .75s forwards; }
+.confetti:nth-child(7)  { left: calc(50% - 72px);  bottom: 22px; animation: confetti-arc-left-lg 1.4s .9s forwards; }
+.confetti:nth-child(8)  { left: calc(50% + 64px);  bottom: 26px; animation: confetti-arc-right-sm 1.5s 1.05s forwards; }
+.confetti:nth-child(9)  { left: calc(50% - 88px);  bottom: 28px; animation: confetti-arc-left-sm 1.6s 1.2s forwards; }
+.confetti:nth-child(10) { left: calc(50% + 88px);  bottom: 24px; animation: confetti-arc-right-lg 1.8s 1.35s forwards; }
+.confetti:nth-child(11) { left: calc(50% - 104px); bottom: 20px; animation: confetti-arc-left-lg 1.3s 1.5s forwards; }
+.confetti:nth-child(12) { left: calc(50% + 104px); bottom: 30px; animation: confetti-arc-right-sm 1.4s 1.65s forwards; }
+
+@keyframes confetti-arc-left-sm {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0) rotate(0deg); }
+    12%  { opacity: 1; }
+    60%  { transform: translateX(calc(-50% - 30px)) translateY(-100px) rotate(180deg); }
+    100% { opacity: 0; transform: translateX(calc(-50% - 60px)) translateY(-160px) rotate(300deg); }
+}
+
+@keyframes confetti-arc-left-lg {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0) rotate(0deg); }
+    12%  { opacity: 1; }
+    60%  { transform: translateX(calc(-50% - 50px)) translateY(-120px) rotate(200deg); }
+    100% { opacity: 0; transform: translateX(calc(-50% - 100px)) translateY(-180px) rotate(360deg); }
+}
+
+@keyframes confetti-arc-right-sm {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0) rotate(0deg); }
+    12%  { opacity: 1; }
+    60%  { transform: translateX(calc(-50% + 30px)) translateY(-100px) rotate(-180deg); }
+    100% { opacity: 0; transform: translateX(calc(-50% + 60px)) translateY(-160px) rotate(-300deg); }
+}
+
+@keyframes confetti-arc-right-lg {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0) rotate(0deg); }
+    12%  { opacity: 1; }
+    60%  { transform: translateX(calc(-50% + 50px)) translateY(-120px) rotate(-200deg); }
+    100% { opacity: 0; transform: translateX(calc(-50% + 100px)) translateY(-180px) rotate(-360deg); }
+}
+
 
 
 .flex-row-around {
